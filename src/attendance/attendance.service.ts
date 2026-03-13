@@ -1,75 +1,123 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Attendance } from './entities/attendance.entity';
+import { Volunteer } from '../users/entities/volunteer.entity';
+import { CreateCheckInDto } from './dto/create-check-in.dto';
 
 @Injectable()
 export class AttendanceService {
-  // Mock data for now - in production this would connect to a database
-  private mockAttendanceData = {
-    'event-1': {
-      totalVolunteers: 142,
-      checkedIn: 98,
-      lateArrivals: 14,
-      absent: 30,
-      attendanceRate: 69
-    }
-  };
+  constructor(
+    @InjectRepository(Attendance)
+    private attendanceRepository: Repository<Attendance>,
+    @InjectRepository(Volunteer)
+    private volunteerRepository: Repository<Volunteer>,
+  ) {}
 
-  private mockRosterData = {
-    'event-1': [
-      { id: '1', name: 'Sarah Mitchell', role: 'Team Lead', status: 'present', checkedInTime: '08:30 AM' },
-      { id: '2', name: 'James Okafor', role: 'Registration', status: 'present', checkedInTime: '08:45 AM' },
-      { id: '3', name: 'Michael Chen', role: 'Volunteer', status: 'present', checkedInTime: '08:50 AM' },
-      { id: '4', name: 'Emma Thompson', role: 'Volunteer', status: 'late', checkedInTime: '09:15 AM' },
-      { id: '5', name: 'David Kumar', role: 'Team Lead', status: 'absent', checkedInTime: null },
-      { id: '6', name: 'Priya Nair', role: 'Logistics', status: 'present', checkedInTime: '08:35 AM' },
-      { id: '7', name: 'Carlos Reyes', role: 'Security', status: 'absent', checkedInTime: null },
-      { id: '8', name: 'Amara Diallo', role: 'Hospitality', status: 'present', checkedInTime: '08:20 AM' },
-      { id: '9', name: 'Tom Whitfield', role: 'AV Tech', status: 'late', checkedInTime: '09:10 AM' },
-      { id: '10', name: 'Yuki Tanaka', role: 'Volunteer', status: 'present', checkedInTime: '08:05 AM' },
-      { id: '11', name: 'Sofia Rodriguez', role: 'Volunteer', status: 'present', checkedInTime: '08:12 AM' },
-      { id: '12', name: 'Alex Johnson', role: 'Volunteer', status: 'present', checkedInTime: '08:18 AM' },
-      { id: '13', name: 'Marcus Johnson', role: 'Volunteer', status: 'present', checkedInTime: '08:40 AM' },
-      { id: '14', name: 'Elena Garcia', role: 'Team Lead', status: 'present', checkedInTime: '08:25 AM' },
-      { id: '15', name: 'David Chen', role: 'Volunteer', status: 'absent', checkedInTime: null },
-      { id: '16', name: 'Leah Cohen', role: 'Volunteer', status: 'present', checkedInTime: '08:55 AM' }
-    ]
-  };
+  async getAttendanceOverview(eventId: string) {
+    const totalVolunteers = await this.volunteerRepository.count();
+    
+    // In a real app we would count specific to eventId and maybe those invited to the event
+    const attendances = await this.attendanceRepository.find({
+      where: { eventId }
+    });
 
-  private mockRecentCheckIns = {
-    'event-1': [
-      { id: '1', name: 'Yuki Tanaka', time: '08:05 AM', status: 'present' },
-      { id: '2', name: 'Sofia Rodriguez', time: '08:10 AM', status: 'present' },
-      { id: '3', name: 'Alex Johnson', time: '08:15 AM', status: 'present' },
-      { id: '4', name: 'Amara Diallo', time: '08:20 AM', status: 'present' },
-      { id: '5', name: 'Elena Garcia', time: '08:25 AM', status: 'present' },
-      { id: '6', name: 'Sarah Mitchell', time: '08:30 AM', status: 'present' },
-      { id: '7', name: 'Priya Nair', time: '08:35 AM', status: 'present' },
-      { id: '8', name: 'Marcus Johnson', time: '08:40 AM', status: 'present' }
-    ]
-  };
+    const checkedIn = attendances.filter(a => a.status === 'present').length;
+    const lateArrivals = attendances.filter(a => a.status === 'late').length;
+    
+    // Assuming anyone not 'present' or 'late' is absent (or just total - (checkedIn + late))
+    const absent = totalVolunteers - (checkedIn + lateArrivals);
+    const attendanceRate = totalVolunteers > 0 ? Math.round(((checkedIn + lateArrivals) / totalVolunteers) * 100) : 0;
 
-  getAttendanceOverview(eventId: string) {
-    return this.mockAttendanceData[eventId] || {
-      totalVolunteers: 0,
-      checkedIn: 0,
-      lateArrivals: 0,
-      absent: 0,
-      attendanceRate: 0
+    return {
+      totalVolunteers,
+      checkedIn,
+      lateArrivals,
+      absent,
+      attendanceRate
     };
   }
 
-  getVolunteerRoster(eventId: string) {
-    return this.mockRosterData[eventId] || [];
+  async getVolunteerRoster(eventId: string) {
+    // Get all volunteers and their attendance for this event
+    const volunteers = await this.volunteerRepository.find();
+    
+    const rosters = await Promise.all(volunteers.map(async (v) => {
+      const attendance = await this.attendanceRepository.findOne({
+        where: { volunteer: { id: v.id }, eventId }
+      });
+
+      return {
+        id: v.id,
+        name: v.name,
+        role: v.role,
+        status: attendance ? attendance.status : 'absent',
+        checkedInTime: attendance?.checkInTime 
+          ? new Date(attendance.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) 
+          : null
+      };
+    }));
+
+    return rosters;
   }
 
-  getRecentCheckIns(eventId: string) {
-    return this.mockRecentCheckIns[eventId] || [];
+  async getRecentCheckIns(eventId: string) {
+    const recent = await this.attendanceRepository.find({
+      where: { eventId, status: 'present' }, // 'present' or 'late'
+      order: { checkInTime: 'DESC' },
+      take: 10,
+      relations: ['volunteer']
+    });
+
+    return recent.map(a => ({
+      id: a.id,
+      name: a.volunteer?.name || 'Unknown',
+      time: a.checkInTime ? new Date(a.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '',
+      status: a.status
+    }));
   }
 
-  checkIn(data: any) {
+  async checkIn(createCheckInDto: CreateCheckInDto & { eventId: string }) {
+    // Assuming createCheckInDto has volunteerId or qrCode
+    // In standard scenario, volunteer might just scan a code which gives eventId and volunteerId
+    const { eventId } = createCheckInDto;
+    
+    // fallback id
+    const volunteerId = (createCheckInDto as any).volunteerId;
+    
+    if (!volunteerId) {
+       throw new NotFoundException('volunteerId is required for check in');
+    }
+
+    const volunteer = await this.volunteerRepository.findOne({ where: { id: volunteerId }});
+    if (!volunteer) throw new NotFoundException('Volunteer not found');
+
+    let attendance = await this.attendanceRepository.findOne({
+      where: { volunteer: { id: volunteerId }, eventId }
+    });
+
+    if (!attendance) {
+      attendance = this.attendanceRepository.create({
+        volunteer,
+        eventId,
+        status: 'present',
+        checkInTime: new Date()
+      });
+    } else {
+      attendance.status = 'present'; // or 'late' depending on logic
+      attendance.checkInTime = new Date();
+    }
+
+    await this.attendanceRepository.save(attendance);
+
     return {
       success: true,
       message: 'Check-in successful',
-      timestamp: new Date().toISOString()
+      timestamp: attendance.checkInTime?.toISOString() || new Date().toISOString()
     };
+  }
+
+  async getVolunteerCount() {
+    return this.volunteerRepository.count();
   }
 }

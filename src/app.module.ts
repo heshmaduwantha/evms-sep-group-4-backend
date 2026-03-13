@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
@@ -10,7 +10,8 @@ import { ReportsModule } from './reports/reports.module';
 import { ManualCheckinModule } from './manual-checkin/manual-checkin.module';
 import { QrScannerModule } from './qr-scanner/qr-scanner.module';
 import { User } from './users/entities/user.entity';
-
+import { Volunteer } from './users/entities/volunteer.entity';
+import { Attendance } from './attendance/entities/attendance.entity';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -26,7 +27,7 @@ import { User } from './users/entities/user.entity';
         username: configService.get<string>('PG_DB_USER'),
         password: configService.get<string>('PG_DB_PASSWORD'),
         database: configService.get<string>('PG_DB_NAME'),
-        entities: [User],
+        entities: [User, Volunteer, Attendance],
         synchronize: true, // Only for development!
       }),
       inject: [ConfigService],
@@ -41,4 +42,20 @@ import { User } from './users/entities/user.entity';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply((req, res, next) => {
+        const { method, url } = req;
+        const auth = req.headers.authorization ? 'Present' : 'Missing';
+        
+        res.on('finish', () => {
+          const { statusCode } = res;
+          console.log(`[Request] ${method} ${url} - Status: ${statusCode} - Auth: ${auth}`);
+        });
+        
+        next();
+      })
+      .forRoutes('*');
+  }
+}

@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ManualCheckinService } from './manual-checkin.service';
 import { UpdateCheckinDto } from './dto/update-checkin.dto';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
@@ -19,22 +19,28 @@ export class ManualCheckinController {
     @Query('search') search?: string,
     @Query('status') status?: string,
   ) {
+    console.log(`[ManualCheckinController] getVolunteers - eventId: ${eventId}, search: ${search}, status: ${status}`);
     return this.manualCheckinService.getVolunteers(eventId, search, status);
   }
 
-  @Put('checkin/:volunteerId')
+  @Put('checkin/:eventId/:volunteerId')
   @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
   updateCheckin(
+    @Param('eventId') eventId: string,
     @Param('volunteerId') volunteerId: string,
     @Body() updateCheckinDto: UpdateCheckinDto,
   ) {
-    return this.manualCheckinService.updateCheckin(volunteerId, updateCheckinDto);
+    return this.manualCheckinService.updateCheckin(volunteerId, eventId, updateCheckinDto);
   }
 
-  @Post('create')
+  @Post('create/:eventId')
   @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
-  createAttendance(@Body() createAttendanceDto: CreateAttendanceDto) {
-    return this.manualCheckinService.createAttendance(createAttendanceDto);
+  createAttendance(
+    @Param('eventId') eventId: string,
+    @Body() createAttendanceDto: CreateAttendanceDto
+  ) {
+    console.log(`[ManualCheckinController] createAttendance - eventId: ${eventId}`, createAttendanceDto);
+    return this.manualCheckinService.createAttendance(eventId, createAttendanceDto);
   }
 
   @Get('summary/:eventId')
@@ -43,9 +49,27 @@ export class ManualCheckinController {
     return this.manualCheckinService.getCheckinSummary(eventId);
   }
 
-  @Put('mark-absent/:volunteerId')
+  @Put('mark-absent/:eventId/:volunteerId')
   @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
-  markAbsent(@Param('volunteerId') volunteerId: string) {
-    return this.manualCheckinService.markAbsent(volunteerId);
+  markAbsent(
+    @Param('eventId') eventId: string, 
+    @Param('volunteerId') volunteerId: string
+  ) {
+    return this.manualCheckinService.markAbsent(volunteerId, eventId);
+  }
+
+  @Post('volunteer/:id')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  updateVolunteer(
+    @Param('id') id: string,
+    @Body() updateDto: any,
+  ) {
+    return this.manualCheckinService.updateVolunteer(id, updateDto);
+  }
+
+  @Delete('volunteer/:id')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  deleteVolunteer(@Param('id') id: string) {
+    return this.manualCheckinService.deleteVolunteer(id);
   }
 }

@@ -23,15 +23,24 @@ export class AttendanceController {
     return this.attendanceService.getVolunteerRoster(eventId);
   }
 
-  @Post('check-in')
+  @Post('check-in/:eventId')
   @Roles(UserRole.VOLUNTEER, UserRole.ORGANIZER, UserRole.ADMIN)
-  checkIn(@Body() createCheckInDto: CreateCheckInDto) {
-    return this.attendanceService.checkIn(createCheckInDto);
+  checkIn(
+    @Param('eventId') eventId: string,
+    @Body() createCheckInDto: CreateCheckInDto
+  ) {
+    return this.attendanceService.checkIn({ ...createCheckInDto, eventId });
   }
 
   @Get('recent-checkins/:eventId')
   @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
   getRecentCheckIns(@Param('eventId') eventId: string) {
     return this.attendanceService.getRecentCheckIns(eventId);
+  }
+
+  @Get('volunteer-count')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  getVolunteerCount() {
+    return this.attendanceService.getVolunteerCount();
   }
 }
