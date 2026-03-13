@@ -19,6 +19,9 @@ export class Attendance {
   @Column({ type: 'timestamp', nullable: true })
   checkInTime: Date | null;
 
+  @Column({ default: 'manual' })
+  checkInMethod: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

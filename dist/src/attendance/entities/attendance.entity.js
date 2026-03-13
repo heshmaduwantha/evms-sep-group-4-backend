@@ -18,6 +18,7 @@ let Attendance = class Attendance {
     volunteer;
     status;
     checkInTime;
+    checkInMethod;
     createdAt;
     updatedAt;
 };
@@ -43,6 +44,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
     __metadata("design:type", Object)
 ], Attendance.prototype, "checkInTime", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: 'manual' }),
+    __metadata("design:type", String)
+], Attendance.prototype, "checkInMethod", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

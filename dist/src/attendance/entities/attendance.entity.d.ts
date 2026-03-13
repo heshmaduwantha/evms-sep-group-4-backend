@@ -5,6 +5,7 @@ export declare class Attendance {
     volunteer: Volunteer;
     status: string;
     checkInTime: Date | null;
+    checkInMethod: string;
     createdAt: Date;
     updatedAt: Date;
 }

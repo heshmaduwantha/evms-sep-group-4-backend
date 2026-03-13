@@ -94,6 +94,7 @@ let ManualCheckinService = class ManualCheckinService {
         if (updateCheckinDto.checkedIn) {
             attendance.status = 'present';
             attendance.checkInTime = new Date();
+            attendance.checkInMethod = 'manual';
         }
         else {
             attendance.status = 'absent';

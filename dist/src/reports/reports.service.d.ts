@@ -13,6 +13,7 @@ export declare class ReportsService {
             dept: string;
             status: string;
             time: string | null;
+            method: string;
         }[];
         totalRecords: number;
     }>;
@@ -22,6 +23,8 @@ export declare class ReportsService {
         late: number;
         absent: number;
         attendanceRate: number;
+        qrCheckedIn: number;
+        manualCheckedIn: number;
     }>;
     getByDepartment(eventId: string): Promise<any[]>;
     generatePDFReport(eventId: string): Promise<{
@@ -35,6 +38,8 @@ export declare class ReportsService {
                 late: number;
                 absent: number;
                 attendanceRate: number;
+                qrCheckedIn: number;
+                manualCheckedIn: number;
             };
             records: {
                 id: string;
@@ -43,6 +48,7 @@ export declare class ReportsService {
                 dept: string;
                 status: string;
                 time: string | null;
+                method: string;
             }[];
         };
     }>;

@@ -56,6 +56,7 @@ let QrScannerService = class QrScannerService {
         }
         attendance.status = 'present';
         attendance.checkInTime = new Date();
+        attendance.checkInMethod = 'qr';
         await this.attendanceRepository.save(attendance);
         return {
             success: true,

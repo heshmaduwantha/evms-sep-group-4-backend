@@ -32,6 +32,7 @@ export class ReportsService {
         dept: v.department,
         status: attendance ? attendance.status : 'absent',
         time: attendance?.checkInTime ? new Date(attendance.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : null,
+        method: attendance?.checkInMethod || 'N/A',
       };
     });
 
@@ -58,12 +59,17 @@ export class ReportsService {
     
     const attendanceRate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
 
+    const qrCheckedIn = attendances.filter(a => a.checkInMethod === 'qr').length;
+    const manualCheckedIn = attendances.filter(a => a.checkInMethod === 'manual').length;
+
     return {
       total,
       present,
       late,
       absent,
       attendanceRate,
+      qrCheckedIn,
+      manualCheckedIn,
     };
   }
 
@@ -118,9 +124,9 @@ export class ReportsService {
   async generateCSVReport(eventId: string) {
     const data = await this.getAttendanceReports({ eventId });
     
-    let csv = 'Name,Role,Department,Status,Check-in Time\n';
+    let csv = 'Name,Role,Department,Status,Check-in Time,Method\n';
     data.records.forEach(r => {
-      csv += `"${r.name}","${r.role}","${r.dept}","${r.status}","${r.time || ''}"\n`;
+      csv += `"${r.name}","${r.role}","${r.dept}","${r.status}","${r.time || ''}","${r.method}"\n`;
     });
 
     return {

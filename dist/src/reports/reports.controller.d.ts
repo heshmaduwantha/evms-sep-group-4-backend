@@ -10,6 +10,7 @@ export declare class ReportsController {
             dept: string;
             status: string;
             time: string | null;
+            method: string;
         }[];
         totalRecords: number;
     }>;
@@ -19,6 +20,8 @@ export declare class ReportsController {
         late: number;
         absent: number;
         attendanceRate: number;
+        qrCheckedIn: number;
+        manualCheckedIn: number;
     }>;
     getByDepartment(eventId: string): Promise<any[]>;
     exportPDF(eventId: string): Promise<{
@@ -32,6 +35,8 @@ export declare class ReportsController {
                 late: number;
                 absent: number;
                 attendanceRate: number;
+                qrCheckedIn: number;
+                manualCheckedIn: number;
             };
             records: {
                 id: string;
@@ -40,6 +45,7 @@ export declare class ReportsController {
                 dept: string;
                 status: string;
                 time: string | null;
+                method: string;
             }[];
         };
     }>;
