@@ -14,33 +14,24 @@ export class ReportsService {
   ) {}
 
   async getAttendanceReports(filters: any) {
-    const { eventId, date } = filters;
+    const { eventId, date, status, department } = filters;
+    console.log(`[ReportsService] getAttendanceReports - Filters: eventId=${eventId}, date=${date}, status=${status}, department=${department}`);
+    
     const query = this.volunteerRepository.createQueryBuilder('volunteer');
 
-    let start: string | null = null;
-    let end: string | null = null;
-    
-    if (date && date !== '') {
-      start = `${date} 00:00:00`;
-      const d = new Date(date);
-      d.setUTCDate(d.getUTCDate() + 1);
-      end = d.toISOString().split('T')[0] + ' 00:00:00';
-    }
-
+    // Join attendance for specific event and date
     query.leftJoinAndSelect('volunteer.attendances', 'attendance', 
-        'attendance.eventId = :eventId AND (:dateParam IS NULL OR (attendance.checkInTime >= :start AND attendance.checkInTime < :end))', 
-        { 
-          eventId, 
-          dateParam: (date && date !== '') ? date : null,
-          start,
-          end
-        });
+      'attendance.eventId = :eventId AND (:date IS NULL OR :date = \'\' OR DATE(attendance.checkInTime) = DATE(:date))',
+      { eventId, date: date || null }
+    );
 
-    if (filters.department && filters.department !== 'all') {
-      query.andWhere('volunteer.department = :department', { department: filters.department });
+    if (department && department !== 'all') {
+      // Map frontend department values if necessary, but for now just use what's passed
+      query.andWhere('volunteer.department = :department', { department });
     }
 
     const volunteers = await query.getMany();
+    console.log(`[ReportsService] Found ${volunteers.length} volunteers`);
 
     let records = volunteers.map(v => {
       const attendance = v.attendances?.[0];
@@ -55,10 +46,11 @@ export class ReportsService {
       };
     });
 
-    if (filters.status && filters.status !== 'all') {
-      records = records.filter(r => r.status === filters.status);
+    if (status && status !== 'all') {
+      records = records.filter(r => r.status === status);
     }
 
+    console.log(`[ReportsService] Returning ${records.length} records`);
     return {
       records,
       totalRecords: records.length,
@@ -183,5 +175,11 @@ export class ReportsService {
       fileName: `attendance-report-${eventId}.csv`,
       content: csv
     };
+  }
+
+  async getRawData() {
+    const volunteers = await this.volunteerRepository.find();
+    const attendances = await this.attendanceRepository.find();
+    return { volunteers, attendances };
   }
 }

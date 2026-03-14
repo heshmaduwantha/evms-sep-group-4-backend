@@ -18,6 +18,7 @@ export class ReportsController {
     @Query('department') department?: string,
     @Query('date') date?: string,
   ) {
+    console.log(`[ReportsController] getAttendanceReports - Query:`, { eventId, status, department, date });
     return this.reportsService.getAttendanceReports({
       eventId,
       status,
@@ -32,6 +33,7 @@ export class ReportsController {
     @Query('eventId') eventId: string,
     @Query('date') date?: string,
   ) {
+    console.log(`[ReportsController] getSummary - Query:`, { eventId, date });
     return this.reportsService.getSummary(eventId, date);
   }
 
