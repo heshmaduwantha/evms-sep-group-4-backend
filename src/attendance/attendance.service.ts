@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Attendance } from './entities/attendance.entity';
@@ -12,11 +12,48 @@ export class AttendanceService {
     private attendanceRepository: Repository<Attendance>,
     @InjectRepository(Volunteer)
     private volunteerRepository: Repository<Volunteer>,
-  ) {}
+  ) { }
+
+  async onModuleInit() {
+    const vCount = await this.volunteerRepository.count();
+    const aCount = await this.attendanceRepository.count();
+
+    if (vCount === 0) {
+      console.log('Seeding initial volunteer and attendance data...');
+      const v1 = await this.volunteerRepository.save(this.volunteerRepository.create({
+        name: 'Sarah Wilson',
+        role: 'Team Lead',
+        department: 'Operations'
+      }));
+
+      const v2 = await this.volunteerRepository.save(this.volunteerRepository.create({
+        name: 'John Doe',
+        role: 'Volunteer',
+        department: 'Front Desk'
+      }));
+
+      await this.attendanceRepository.save([
+        this.attendanceRepository.create({
+          volunteer: v1,
+          eventId: 'event-1',
+          status: 'present',
+          checkInTime: new Date(),
+          checkInMethod: 'manual'
+        }),
+        this.attendanceRepository.create({
+          volunteer: v2,
+          eventId: 'event-1',
+          status: 'late',
+          checkInTime: new Date(),
+          checkInMethod: 'manual'
+        })
+      ]);
+    }
+  }
 
   async getAttendanceOverview(eventId: string) {
     const totalVolunteers = await this.volunteerRepository.count();
-    
+
     // In a real app we would count specific to eventId and maybe those invited to the event
     const attendances = await this.attendanceRepository.find({
       where: { eventId }
@@ -24,7 +61,7 @@ export class AttendanceService {
 
     const checkedIn = attendances.filter(a => a.status === 'present').length;
     const lateArrivals = attendances.filter(a => a.status === 'late').length;
-    
+
     // Assuming anyone not 'present' or 'late' is absent (or just total - (checkedIn + late))
     const absent = totalVolunteers - (checkedIn + lateArrivals);
     const attendanceRate = totalVolunteers > 0 ? Math.round(((checkedIn + lateArrivals) / totalVolunteers) * 100) : 0;
@@ -41,7 +78,7 @@ export class AttendanceService {
   async getVolunteerRoster(eventId: string) {
     // Get all volunteers and their attendance for this event
     const volunteers = await this.volunteerRepository.find();
-    
+
     const rosters = await Promise.all(volunteers.map(async (v) => {
       const attendance = await this.attendanceRepository.findOne({
         where: { volunteer: { id: v.id }, eventId }
@@ -52,8 +89,8 @@ export class AttendanceService {
         name: v.name,
         role: v.role,
         status: attendance ? attendance.status : 'absent',
-        checkedInTime: attendance?.checkInTime 
-          ? new Date(attendance.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) 
+        checkedInTime: attendance?.checkInTime
+          ? new Date(attendance.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
           : null
       };
     }));
@@ -81,15 +118,15 @@ export class AttendanceService {
     // Logic for creating check-in
     // In standard scenario, volunteer might just scan a code which gives eventId and volunteerId
     const { eventId } = createCheckInDto;
-    
+
     // fallback id
     const volunteerId = (createCheckInDto as any).volunteerId;
-    
+
     if (!volunteerId) {
-       throw new NotFoundException('volunteerId is required for check in');
+      throw new NotFoundException('volunteerId is required for check in');
     }
 
-    const volunteer = await this.volunteerRepository.findOne({ where: { id: volunteerId }});
+    const volunteer = await this.volunteerRepository.findOne({ where: { id: volunteerId } });
     if (!volunteer) throw new NotFoundException('Volunteer not found');
 
     let attendance = await this.attendanceRepository.findOne({
@@ -120,5 +157,19 @@ export class AttendanceService {
 
   async getVolunteerCount() {
     return this.volunteerRepository.count();
+  }
+
+  async updateCheckIn(id: string, updateData: any) {
+    const attendance = await this.attendanceRepository.findOne({ where: { id } });
+    if (!attendance) throw new NotFoundException('Attendance record not found');
+
+    Object.assign(attendance, updateData);
+    return this.attendanceRepository.save(attendance);
+  }
+
+  async deleteCheckIn(id: string) {
+    const result = await this.attendanceRepository.delete(id);
+    if (result.affected === 0) throw new NotFoundException('Attendance record not found');
+    return { success: true };
   }
 }

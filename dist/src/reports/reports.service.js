@@ -29,14 +29,28 @@ let ReportsService = class ReportsService {
         const { eventId, date, status, department } = filters;
         console.log(`[ReportsService] getAttendanceReports - Filters: eventId=${eventId}, date=${date}, status=${status}, department=${department}`);
         const query = this.volunteerRepository.createQueryBuilder('volunteer');
-        query.leftJoinAndSelect('volunteer.attendances', 'attendance', 'attendance.eventId = :eventId AND (:date IS NULL OR :date = \'\' OR DATE(attendance.checkInTime) = DATE(:date))', { eventId, date: date || null });
+        console.log(`[ReportsService] Querying with params:`, { eventId, date });
+        query.leftJoinAndSelect('volunteer.attendances', 'attendance', 'attendance.eventId = :eventId', { eventId });
         if (department && department !== 'all') {
-            query.andWhere('volunteer.department = :department', { department });
+            console.log(`[ReportsService] Adding department filter: ${department}`);
+            query.andWhere('LOWER(volunteer.department) = LOWER(:department)', { department });
         }
         const volunteers = await query.getMany();
+        console.log(`[ReportsService] Raw volunteers found: ${volunteers.length}`);
+        if (volunteers.length > 0) {
+            console.log(`[ReportsService] First volunteer sample:`, {
+                name: volunteers[0].name,
+                attendancesCount: volunteers[0].attendances?.length
+            });
+        }
         console.log(`[ReportsService] Found ${volunteers.length} volunteers`);
         let records = volunteers.map(v => {
-            const attendance = v.attendances?.[0];
+            let attendance = v.attendances?.find(a => {
+                if (!date || date === '')
+                    return true;
+                const checkInDate = a.checkInTime ? new Date(a.checkInTime).toISOString().split('T')[0] : null;
+                return checkInDate === date;
+            });
             return {
                 id: v.id,
                 name: v.name,

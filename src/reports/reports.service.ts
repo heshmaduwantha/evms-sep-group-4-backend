@@ -11,30 +11,46 @@ export class ReportsService {
     private volunteerRepository: Repository<Volunteer>,
     @InjectRepository(Attendance)
     private attendanceRepository: Repository<Attendance>,
-  ) {}
+  ) { }
 
   async getAttendanceReports(filters: any) {
     const { eventId, date, status, department } = filters;
     console.log(`[ReportsService] getAttendanceReports - Filters: eventId=${eventId}, date=${date}, status=${status}, department=${department}`);
-    
+
     const query = this.volunteerRepository.createQueryBuilder('volunteer');
 
     // Join attendance for specific event and date
-    query.leftJoinAndSelect('volunteer.attendances', 'attendance', 
-      'attendance.eventId = :eventId AND (:date IS NULL OR :date = \'\' OR DATE(attendance.checkInTime) = DATE(:date))',
-      { eventId, date: date || null }
+    console.log(`[ReportsService] Querying with params:`, { eventId, date });
+
+    query.leftJoinAndSelect('volunteer.attendances', 'attendance',
+      'attendance.eventId = :eventId',
+      { eventId }
     );
 
     if (department && department !== 'all') {
-      // Map frontend department values if necessary, but for now just use what's passed
-      query.andWhere('volunteer.department = :department', { department });
+      console.log(`[ReportsService] Adding department filter: ${department}`);
+      query.andWhere('LOWER(volunteer.department) = LOWER(:department)', { department });
     }
 
     const volunteers = await query.getMany();
+    console.log(`[ReportsService] Raw volunteers found: ${volunteers.length}`);
+    if (volunteers.length > 0) {
+      console.log(`[ReportsService] First volunteer sample:`, {
+        name: volunteers[0].name,
+        attendancesCount: volunteers[0].attendances?.length
+      });
+    }
     console.log(`[ReportsService] Found ${volunteers.length} volunteers`);
 
     let records = volunteers.map(v => {
-      const attendance = v.attendances?.[0];
+      // Find attendance that matches the date if filter is provided
+      let attendance = v.attendances?.find(a => {
+        if (!date || date === '') return true;
+
+        const checkInDate = a.checkInTime ? new Date(a.checkInTime).toISOString().split('T')[0] : null;
+        return checkInDate === date;
+      });
+
       return {
         id: v.id,
         name: v.name,
@@ -59,7 +75,7 @@ export class ReportsService {
 
   async getSummary(eventId: string, date?: string) {
     const total = await this.volunteerRepository.count();
-    
+
     const query = this.attendanceRepository.createQueryBuilder('attendance')
       .where('attendance.eventId = :eventId', { eventId });
 
@@ -76,7 +92,7 @@ export class ReportsService {
     const present = attendances.filter(a => a.status === 'present').length;
     const late = attendances.filter(a => a.status === 'late').length;
     const absent = total - (present + late);
-    
+
     const attendanceRate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
 
     const manualCheckedIn = attendances.filter(a => a.checkInMethod === 'manual').length;
@@ -111,10 +127,10 @@ export class ReportsService {
       const attendance = v.attendances?.find(a => {
         const matchesEvent = a.eventId === eventId;
         if (!date || date === '') return matchesEvent;
-        
+
         const checkInDate = a.checkInTime ? new Date(a.checkInTime) : null;
         if (!checkInDate) return false;
-        
+
         // Simple comparison: check if checkInTime is within the date's 24h range in the target timezone
         // Or simpler: just compare the YYYY-MM-DD part of the local string if its stored as local or just use the same range logic
         // To be consistent with other methods, let's use the range logic
@@ -122,16 +138,16 @@ export class ReportsService {
         const d = new Date(date);
         d.setUTCDate(d.getUTCDate() + 1);
         const end = d.toISOString().split('T')[0] + ' 00:00:00';
-        
+
         if (!a.checkInTime) return false;
-        
+
         const dStart = new Date(start);
         const dEnd = new Date(end);
         const dCheckIn = new Date(a.checkInTime);
-        
+
         return matchesEvent && dCheckIn >= dStart && dCheckIn < dEnd;
       });
-      
+
       if (attendance?.status === 'present') {
         stats.present++;
       } else if (attendance?.status === 'late') {
@@ -147,7 +163,7 @@ export class ReportsService {
   async generatePDFReport(eventId: string) {
     const data = await this.getAttendanceReports({ eventId });
     const summary = await this.getSummary(eventId);
-    
+
     // We'll return a structured JSON that the frontend can use to "simulated" a PDF or we can return a base64 string if we had a library.
     // Given we want to "make it work", I'll return the data and the frontend can handle it or I can return a simple string.
     return {
@@ -163,7 +179,7 @@ export class ReportsService {
 
   async generateCSVReport(eventId: string) {
     const data = await this.getAttendanceReports({ eventId });
-    
+
     let csv = 'Name,Role,Department,Status,Check-in Time,Method\n';
     data.records.forEach(r => {
       csv += `"${r.name}","${r.role}","${r.dept}","${r.status}","${r.time || ''}","${r.method}"\n`;

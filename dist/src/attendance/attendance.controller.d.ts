@@ -29,4 +29,8 @@ export declare class AttendanceController {
         status: string;
     }[]>;
     getVolunteerCount(): Promise<number>;
+    updateCheckIn(id: string, updateData: any): Promise<import("./entities/attendance.entity").Attendance>;
+    deleteCheckIn(id: string): Promise<{
+        success: boolean;
+    }>;
 }

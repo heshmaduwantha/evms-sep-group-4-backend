@@ -40,6 +40,12 @@ let AttendanceController = class AttendanceController {
     getVolunteerCount() {
         return this.attendanceService.getVolunteerCount();
     }
+    updateCheckIn(id, updateData) {
+        return this.attendanceService.updateCheckIn(id, updateData);
+    }
+    deleteCheckIn(id) {
+        return this.attendanceService.deleteCheckIn(id);
+    }
 };
 exports.AttendanceController = AttendanceController;
 __decorate([
@@ -82,6 +88,23 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AttendanceController.prototype, "getVolunteerCount", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    (0, roles_decorator_1.Roles)(role_enum_1.UserRole.ORGANIZER, role_enum_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AttendanceController.prototype, "updateCheckIn", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, roles_decorator_1.Roles)(role_enum_1.UserRole.ORGANIZER, role_enum_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AttendanceController.prototype, "deleteCheckIn", null);
 exports.AttendanceController = AttendanceController = __decorate([
     (0, common_1.Controller)('attendance'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),

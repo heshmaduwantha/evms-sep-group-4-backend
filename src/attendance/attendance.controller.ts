@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Patch, Delete } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { CreateCheckInDto } from './dto/create-check-in.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -9,7 +9,7 @@ import { UserRole } from '../users/enums/role.enum';
 @Controller('attendance')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AttendanceController {
-  constructor(private readonly attendanceService: AttendanceService) {}
+  constructor(private readonly attendanceService: AttendanceService) { }
 
   @Get('overview/:eventId')
   @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
@@ -43,5 +43,17 @@ export class AttendanceController {
   @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
   getVolunteerCount() {
     return this.attendanceService.getVolunteerCount();
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  updateCheckIn(@Param('id') id: string, @Body() updateData: any) {
+    return this.attendanceService.updateCheckIn(id, updateData);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  deleteCheckIn(@Param('id') id: string) {
+    return this.attendanceService.deleteCheckIn(id);
   }
 }

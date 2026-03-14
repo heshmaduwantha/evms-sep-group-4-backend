@@ -6,6 +6,7 @@ export declare class AttendanceService {
     private attendanceRepository;
     private volunteerRepository;
     constructor(attendanceRepository: Repository<Attendance>, volunteerRepository: Repository<Volunteer>);
+    onModuleInit(): Promise<void>;
     getAttendanceOverview(eventId: string): Promise<{
         totalVolunteers: number;
         checkedIn: number;
@@ -34,4 +35,8 @@ export declare class AttendanceService {
         timestamp: string;
     }>;
     getVolunteerCount(): Promise<number>;
+    updateCheckIn(id: string, updateData: any): Promise<Attendance>;
+    deleteCheckIn(id: string): Promise<{
+        success: boolean;
+    }>;
 }

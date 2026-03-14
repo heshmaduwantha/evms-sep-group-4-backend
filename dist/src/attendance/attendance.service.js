@@ -25,6 +25,39 @@ let AttendanceService = class AttendanceService {
         this.attendanceRepository = attendanceRepository;
         this.volunteerRepository = volunteerRepository;
     }
+    async onModuleInit() {
+        const vCount = await this.volunteerRepository.count();
+        const aCount = await this.attendanceRepository.count();
+        if (vCount === 0) {
+            console.log('Seeding initial volunteer and attendance data...');
+            const v1 = await this.volunteerRepository.save(this.volunteerRepository.create({
+                name: 'Sarah Wilson',
+                role: 'Team Lead',
+                department: 'Operations'
+            }));
+            const v2 = await this.volunteerRepository.save(this.volunteerRepository.create({
+                name: 'John Doe',
+                role: 'Volunteer',
+                department: 'Front Desk'
+            }));
+            await this.attendanceRepository.save([
+                this.attendanceRepository.create({
+                    volunteer: v1,
+                    eventId: 'event-1',
+                    status: 'present',
+                    checkInTime: new Date(),
+                    checkInMethod: 'manual'
+                }),
+                this.attendanceRepository.create({
+                    volunteer: v2,
+                    eventId: 'event-1',
+                    status: 'late',
+                    checkInTime: new Date(),
+                    checkInMethod: 'manual'
+                })
+            ]);
+        }
+    }
     async getAttendanceOverview(eventId) {
         const totalVolunteers = await this.volunteerRepository.count();
         const attendances = await this.attendanceRepository.find({
@@ -107,6 +140,19 @@ let AttendanceService = class AttendanceService {
     }
     async getVolunteerCount() {
         return this.volunteerRepository.count();
+    }
+    async updateCheckIn(id, updateData) {
+        const attendance = await this.attendanceRepository.findOne({ where: { id } });
+        if (!attendance)
+            throw new common_1.NotFoundException('Attendance record not found');
+        Object.assign(attendance, updateData);
+        return this.attendanceRepository.save(attendance);
+    }
+    async deleteCheckIn(id) {
+        const result = await this.attendanceRepository.delete(id);
+        if (result.affected === 0)
+            throw new common_1.NotFoundException('Attendance record not found');
+        return { success: true };
     }
 };
 exports.AttendanceService = AttendanceService;
