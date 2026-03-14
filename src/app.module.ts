@@ -8,7 +8,6 @@ import { AuthModule } from './auth/auth.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { ReportsModule } from './reports/reports.module';
 import { ManualCheckinModule } from './manual-checkin/manual-checkin.module';
-import { QrScannerModule } from './qr-scanner/qr-scanner.module';
 import { User } from './users/entities/user.entity';
 import { Volunteer } from './users/entities/volunteer.entity';
 import { Attendance } from './attendance/entities/attendance.entity';
@@ -37,7 +36,6 @@ import { Attendance } from './attendance/entities/attendance.entity';
     AttendanceModule,
     ReportsModule,
     ManualCheckinModule,
-    QrScannerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

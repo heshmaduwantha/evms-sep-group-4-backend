@@ -28,14 +28,20 @@ export class ReportsController {
 
   @Get('summary')
   @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
-  getSummary(@Query('eventId') eventId: string) {
-    return this.reportsService.getSummary(eventId);
+  getSummary(
+    @Query('eventId') eventId: string,
+    @Query('date') date?: string,
+  ) {
+    return this.reportsService.getSummary(eventId, date);
   }
 
   @Get('by-department')
   @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
-  getByDepartment(@Query('eventId') eventId: string) {
-    return this.reportsService.getByDepartment(eventId);
+  getByDepartment(
+    @Query('eventId') eventId: string,
+    @Query('date') date?: string,
+  ) {
+    return this.reportsService.getByDepartment(eventId, date);
   }
 
   @Get('export/pdf')

@@ -1,6 +1,6 @@
 export class CreateCheckInDto {
   userId: string;
   eventId: string;
-  qrCode?: string;
+  pin?: string;
   timestamp?: Date;
 }

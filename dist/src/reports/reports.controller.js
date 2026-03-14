@@ -32,11 +32,11 @@ let ReportsController = class ReportsController {
             date,
         });
     }
-    getSummary(eventId) {
-        return this.reportsService.getSummary(eventId);
+    getSummary(eventId, date) {
+        return this.reportsService.getSummary(eventId, date);
     }
-    getByDepartment(eventId) {
-        return this.reportsService.getByDepartment(eventId);
+    getByDepartment(eventId, date) {
+        return this.reportsService.getByDepartment(eventId, date);
     }
     exportPDF(eventId) {
         return this.reportsService.generatePDFReport(eventId);
@@ -61,16 +61,18 @@ __decorate([
     (0, common_1.Get)('summary'),
     (0, roles_decorator_1.Roles)(role_enum_1.UserRole.ORGANIZER, role_enum_1.UserRole.ADMIN),
     __param(0, (0, common_1.Query)('eventId')),
+    __param(1, (0, common_1.Query)('date')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], ReportsController.prototype, "getSummary", null);
 __decorate([
     (0, common_1.Get)('by-department'),
     (0, roles_decorator_1.Roles)(role_enum_1.UserRole.ORGANIZER, role_enum_1.UserRole.ADMIN),
     __param(0, (0, common_1.Query)('eventId')),
+    __param(1, (0, common_1.Query)('date')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], ReportsController.prototype, "getByDepartment", null);
 __decorate([

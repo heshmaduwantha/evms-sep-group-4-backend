@@ -105,6 +105,36 @@ let AttendanceService = class AttendanceService {
             timestamp: attendance.checkInTime?.toISOString() || new Date().toISOString()
         };
     }
+    async checkInByPin(pin, eventId) {
+        const volunteer = await this.volunteerRepository.findOne({ where: { pin } });
+        if (!volunteer) {
+            throw new common_1.NotFoundException('Invalid PIN. Volunteer not found.');
+        }
+        let attendance = await this.attendanceRepository.findOne({
+            where: { volunteer: { id: volunteer.id }, eventId }
+        });
+        if (!attendance) {
+            attendance = this.attendanceRepository.create({
+                volunteer,
+                eventId,
+                status: 'present',
+                checkInTime: new Date(),
+                checkInMethod: 'pin'
+            });
+        }
+        else {
+            attendance.status = 'present';
+            attendance.checkInTime = new Date();
+            attendance.checkInMethod = 'pin';
+        }
+        await this.attendanceRepository.save(attendance);
+        return {
+            success: true,
+            message: `Welcome, ${volunteer.name}!`,
+            volunteerName: volunteer.name,
+            timestamp: attendance.checkInTime?.toISOString() || new Date().toISOString()
+        };
+    }
     async getVolunteerCount() {
         return this.volunteerRepository.count();
     }

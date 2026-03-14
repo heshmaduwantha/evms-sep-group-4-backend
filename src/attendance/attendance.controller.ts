@@ -32,6 +32,15 @@ export class AttendanceController {
     return this.attendanceService.checkIn({ ...createCheckInDto, eventId });
   }
 
+  @Post('check-in-by-pin/:eventId')
+  @Roles(UserRole.VOLUNTEER, UserRole.ORGANIZER, UserRole.ADMIN)
+  checkInByPin(
+    @Param('eventId') eventId: string,
+    @Body('pin') pin: string
+  ) {
+    return this.attendanceService.checkInByPin(pin, eventId);
+  }
+
   @Get('recent-checkins/:eventId')
   @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
   getRecentCheckIns(@Param('eventId') eventId: string) {

@@ -17,7 +17,7 @@ export declare class ReportsService {
         }[];
         totalRecords: number;
     }>;
-    getSummary(eventId: string): Promise<{
+    getSummary(eventId: string, date?: string): Promise<{
         total: number;
         present: number;
         late: number;
@@ -26,7 +26,7 @@ export declare class ReportsService {
         qrCheckedIn: number;
         manualCheckedIn: number;
     }>;
-    getByDepartment(eventId: string): Promise<any[]>;
+    getByDepartment(eventId: string, date?: string): Promise<any[]>;
     generatePDFReport(eventId: string): Promise<{
         success: boolean;
         data: {

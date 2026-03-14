@@ -33,5 +33,11 @@ export declare class AttendanceService {
         message: string;
         timestamp: string;
     }>;
+    checkInByPin(pin: string, eventId: string): Promise<{
+        success: boolean;
+        message: string;
+        volunteerName: string;
+        timestamp: string;
+    }>;
     getVolunteerCount(): Promise<number>;
 }

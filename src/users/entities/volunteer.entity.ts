@@ -16,7 +16,7 @@ export class Volunteer {
   department: string;
 
   @Column({ unique: true })
-  qrCode: string;
+  pin: string;
 
   @OneToMany(() => Attendance, (attendance) => attendance.volunteer)
   attendances: Attendance[];

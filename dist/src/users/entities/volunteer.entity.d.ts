@@ -4,7 +4,7 @@ export declare class Volunteer {
     name: string;
     role: string;
     department: string;
-    qrCode: string;
+    pin: string;
     attendances: Attendance[];
     createdAt: Date;
     updatedAt: Date;

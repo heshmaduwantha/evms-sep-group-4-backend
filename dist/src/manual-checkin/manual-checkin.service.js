@@ -46,7 +46,7 @@ let ManualCheckinService = class ManualCheckinService {
                 name: v.name,
                 role: v.role,
                 department: v.department,
-                qrCode: v.qrCode,
+                pin: v.pin,
                 checkedIn: isCheckedIn,
                 time: formattedTime,
             };
@@ -144,7 +144,7 @@ let ManualCheckinService = class ManualCheckinService {
             name: createAttendanceDto.name,
             role: createAttendanceDto.role,
             department: createAttendanceDto.department,
-            qrCode: `QR_MANUAL_${Date.now()}`
+            pin: `PIN_${Date.now().toString().slice(-4)}`
         });
         await this.volunteerRepository.save(volunteer);
         const isCheckedIn = createAttendanceDto.checkedIn || false;
@@ -161,7 +161,7 @@ let ManualCheckinService = class ManualCheckinService {
                 id: volunteer.id,
                 name: volunteer.name,
                 role: volunteer.role,
-                department: volunteer.department,
+                pin: volunteer.pin,
                 checkedIn: isCheckedIn,
                 time: attendance.checkInTime ? attendance.checkInTime.toLocaleTimeString('en-US', {
                     hour: '2-digit', minute: '2-digit', hour12: true

@@ -78,7 +78,7 @@ export class AttendanceService {
   }
 
   async checkIn(createCheckInDto: CreateCheckInDto & { eventId: string }) {
-    // Assuming createCheckInDto has volunteerId or qrCode
+    // Assuming createCheckInDto has volunteerId or pin
     // In standard scenario, volunteer might just scan a code which gives eventId and volunteerId
     const { eventId } = createCheckInDto;
     
@@ -113,6 +113,41 @@ export class AttendanceService {
     return {
       success: true,
       message: 'Check-in successful',
+      timestamp: attendance.checkInTime?.toISOString() || new Date().toISOString()
+    };
+  }
+
+  async checkInByPin(pin: string, eventId: string) {
+    const volunteer = await this.volunteerRepository.findOne({ where: { pin } });
+    
+    if (!volunteer) {
+      throw new NotFoundException('Invalid PIN. Volunteer not found.');
+    }
+
+    let attendance = await this.attendanceRepository.findOne({
+      where: { volunteer: { id: volunteer.id }, eventId }
+    });
+
+    if (!attendance) {
+      attendance = this.attendanceRepository.create({
+        volunteer,
+        eventId,
+        status: 'present',
+        checkInTime: new Date(),
+        checkInMethod: 'pin'
+      });
+    } else {
+      attendance.status = 'present';
+      attendance.checkInTime = new Date();
+      attendance.checkInMethod = 'pin';
+    }
+
+    await this.attendanceRepository.save(attendance);
+
+    return {
+      success: true,
+      message: `Welcome, ${volunteer.name}!`,
+      volunteerName: volunteer.name,
       timestamp: attendance.checkInTime?.toISOString() || new Date().toISOString()
     };
   }

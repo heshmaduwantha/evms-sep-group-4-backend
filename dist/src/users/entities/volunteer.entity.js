@@ -17,7 +17,7 @@ let Volunteer = class Volunteer {
     name;
     role;
     department;
-    qrCode;
+    pin;
     attendances;
     createdAt;
     updatedAt;
@@ -42,7 +42,7 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({ unique: true }),
     __metadata("design:type", String)
-], Volunteer.prototype, "qrCode", void 0);
+], Volunteer.prototype, "pin", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => attendance_entity_1.Attendance, (attendance) => attendance.volunteer),
     __metadata("design:type", Array)

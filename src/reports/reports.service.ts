@@ -15,7 +15,9 @@ export class ReportsService {
 
   async getAttendanceReports(filters: any) {
     const query = this.volunteerRepository.createQueryBuilder('volunteer')
-      .leftJoinAndSelect('volunteer.attendances', 'attendance', 'attendance.eventId = :eventId', { eventId: filters.eventId });
+      .leftJoinAndSelect('volunteer.attendances', 'attendance', 
+        'attendance.eventId = :eventId AND (:date IS NULL OR DATE(attendance.checkInTime) = DATE(:date))', 
+        { eventId: filters.eventId, date: filters.date || null });
 
     if (filters.department && filters.department !== 'all') {
       query.andWhere('volunteer.department = :department', { department: filters.department });
@@ -46,12 +48,17 @@ export class ReportsService {
     };
   }
 
-  async getSummary(eventId: string) {
+  async getSummary(eventId: string, date?: string) {
     const total = await this.volunteerRepository.count();
     
-    const attendances = await this.attendanceRepository.find({
-      where: { eventId }
-    });
+    const query = this.attendanceRepository.createQueryBuilder('attendance')
+      .where('attendance.eventId = :eventId', { eventId });
+
+    if (date) {
+      query.andWhere('DATE(attendance.checkInTime) = DATE(:date)', { date });
+    }
+
+    const attendances = await query.getMany();
 
     const present = attendances.filter(a => a.status === 'present').length;
     const late = attendances.filter(a => a.status === 'late').length;
@@ -73,7 +80,7 @@ export class ReportsService {
     };
   }
 
-  async getByDepartment(eventId: string) {
+  async getByDepartment(eventId: string, date?: string) {
     const volunteers = await this.volunteerRepository.find({
       relations: ['attendances']
     });
@@ -89,8 +96,12 @@ export class ReportsService {
       const stats = deptMap.get(dept);
       stats.total++;
 
-      // Find attendance for this specific event
-      const attendance = v.attendances?.find(a => a.eventId === eventId);
+      // Find attendance for this specific event and optional date
+      const attendance = v.attendances?.find(a => {
+        const matchesEvent = a.eventId === eventId;
+        const matchesDate = !date || (a.checkInTime && new Date(a.checkInTime).toISOString().split('T')[0] === date);
+        return matchesEvent && matchesDate;
+      });
       
       if (attendance?.status === 'present') {
         stats.present++;

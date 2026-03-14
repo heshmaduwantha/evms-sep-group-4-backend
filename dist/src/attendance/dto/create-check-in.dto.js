@@ -4,7 +4,7 @@ exports.CreateCheckInDto = void 0;
 class CreateCheckInDto {
     userId;
     eventId;
-    qrCode;
+    pin;
     timestamp;
 }
 exports.CreateCheckInDto = CreateCheckInDto;

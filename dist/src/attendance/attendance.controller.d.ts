@@ -22,6 +22,12 @@ export declare class AttendanceController {
         message: string;
         timestamp: string;
     }>;
+    checkInByPin(eventId: string, pin: string): Promise<{
+        success: boolean;
+        message: string;
+        volunteerName: string;
+        timestamp: string;
+    }>;
     getRecentCheckIns(eventId: string): Promise<{
         id: string;
         name: string;

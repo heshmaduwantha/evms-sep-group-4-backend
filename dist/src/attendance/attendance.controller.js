@@ -34,6 +34,9 @@ let AttendanceController = class AttendanceController {
     checkIn(eventId, createCheckInDto) {
         return this.attendanceService.checkIn({ ...createCheckInDto, eventId });
     }
+    checkInByPin(eventId, pin) {
+        return this.attendanceService.checkInByPin(pin, eventId);
+    }
     getRecentCheckIns(eventId) {
         return this.attendanceService.getRecentCheckIns(eventId);
     }
@@ -67,6 +70,15 @@ __decorate([
     __metadata("design:paramtypes", [String, create_check_in_dto_1.CreateCheckInDto]),
     __metadata("design:returntype", void 0)
 ], AttendanceController.prototype, "checkIn", null);
+__decorate([
+    (0, common_1.Post)('check-in-by-pin/:eventId'),
+    (0, roles_decorator_1.Roles)(role_enum_1.UserRole.VOLUNTEER, role_enum_1.UserRole.ORGANIZER, role_enum_1.UserRole.ADMIN),
+    __param(0, (0, common_1.Param)('eventId')),
+    __param(1, (0, common_1.Body)('pin')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], AttendanceController.prototype, "checkInByPin", null);
 __decorate([
     (0, common_1.Get)('recent-checkins/:eventId'),
     (0, roles_decorator_1.Roles)(role_enum_1.UserRole.ORGANIZER, role_enum_1.UserRole.ADMIN),

@@ -17,7 +17,6 @@ const auth_module_1 = require("./auth/auth.module");
 const attendance_module_1 = require("./attendance/attendance.module");
 const reports_module_1 = require("./reports/reports.module");
 const manual_checkin_module_1 = require("./manual-checkin/manual-checkin.module");
-const qr_scanner_module_1 = require("./qr-scanner/qr-scanner.module");
 const user_entity_1 = require("./users/entities/user.entity");
 const volunteer_entity_1 = require("./users/entities/volunteer.entity");
 const attendance_entity_1 = require("./attendance/entities/attendance.entity");
@@ -63,7 +62,6 @@ exports.AppModule = AppModule = __decorate([
             attendance_module_1.AttendanceModule,
             reports_module_1.ReportsModule,
             manual_checkin_module_1.ManualCheckinModule,
-            qr_scanner_module_1.QrScannerModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
