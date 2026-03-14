@@ -10,7 +10,6 @@ export declare class ManualCheckinController {
             name: string;
             role: string;
             department: string;
-            pin: string;
             checkedIn: boolean;
             time: string | null;
         }[];
@@ -32,7 +31,6 @@ export declare class ManualCheckinController {
             id: string;
             name: string;
             role: string;
-            pin: string;
             checkedIn: any;
             time: string | null;
         };

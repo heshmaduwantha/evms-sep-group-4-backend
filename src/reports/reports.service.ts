@@ -14,10 +14,27 @@ export class ReportsService {
   ) {}
 
   async getAttendanceReports(filters: any) {
-    const query = this.volunteerRepository.createQueryBuilder('volunteer')
-      .leftJoinAndSelect('volunteer.attendances', 'attendance', 
-        'attendance.eventId = :eventId AND (:date IS NULL OR DATE(attendance.checkInTime) = DATE(:date))', 
-        { eventId: filters.eventId, date: filters.date || null });
+    const { eventId, date } = filters;
+    const query = this.volunteerRepository.createQueryBuilder('volunteer');
+
+    let start: string | null = null;
+    let end: string | null = null;
+    
+    if (date && date !== '') {
+      start = `${date} 00:00:00`;
+      const d = new Date(date);
+      d.setUTCDate(d.getUTCDate() + 1);
+      end = d.toISOString().split('T')[0] + ' 00:00:00';
+    }
+
+    query.leftJoinAndSelect('volunteer.attendances', 'attendance', 
+        'attendance.eventId = :eventId AND (:dateParam IS NULL OR (attendance.checkInTime >= :start AND attendance.checkInTime < :end))', 
+        { 
+          eventId, 
+          dateParam: (date && date !== '') ? date : null,
+          start,
+          end
+        });
 
     if (filters.department && filters.department !== 'all') {
       query.andWhere('volunteer.department = :department', { department: filters.department });
@@ -54,8 +71,12 @@ export class ReportsService {
     const query = this.attendanceRepository.createQueryBuilder('attendance')
       .where('attendance.eventId = :eventId', { eventId });
 
-    if (date) {
-      query.andWhere('DATE(attendance.checkInTime) = DATE(:date)', { date });
+    if (date && date !== '') {
+      const start = `${date} 00:00:00`;
+      const d = new Date(date);
+      d.setUTCDate(d.getUTCDate() + 1);
+      const end = d.toISOString().split('T')[0] + ' 00:00:00';
+      query.andWhere('attendance.checkInTime >= :start AND attendance.checkInTime < :end', { start, end });
     }
 
     const attendances = await query.getMany();
@@ -66,7 +87,6 @@ export class ReportsService {
     
     const attendanceRate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
 
-    const qrCheckedIn = attendances.filter(a => a.checkInMethod === 'qr').length;
     const manualCheckedIn = attendances.filter(a => a.checkInMethod === 'manual').length;
 
     return {
@@ -75,7 +95,6 @@ export class ReportsService {
       late,
       absent,
       attendanceRate,
-      qrCheckedIn,
       manualCheckedIn,
     };
   }
@@ -99,8 +118,26 @@ export class ReportsService {
       // Find attendance for this specific event and optional date
       const attendance = v.attendances?.find(a => {
         const matchesEvent = a.eventId === eventId;
-        const matchesDate = !date || (a.checkInTime && new Date(a.checkInTime).toISOString().split('T')[0] === date);
-        return matchesEvent && matchesDate;
+        if (!date || date === '') return matchesEvent;
+        
+        const checkInDate = a.checkInTime ? new Date(a.checkInTime) : null;
+        if (!checkInDate) return false;
+        
+        // Simple comparison: check if checkInTime is within the date's 24h range in the target timezone
+        // Or simpler: just compare the YYYY-MM-DD part of the local string if its stored as local or just use the same range logic
+        // To be consistent with other methods, let's use the range logic
+        const start = `${date} 00:00:00`;
+        const d = new Date(date);
+        d.setUTCDate(d.getUTCDate() + 1);
+        const end = d.toISOString().split('T')[0] + ' 00:00:00';
+        
+        if (!a.checkInTime) return false;
+        
+        const dStart = new Date(start);
+        const dEnd = new Date(end);
+        const dCheckIn = new Date(a.checkInTime);
+        
+        return matchesEvent && dCheckIn >= dStart && dCheckIn < dEnd;
       });
       
       if (attendance?.status === 'present') {

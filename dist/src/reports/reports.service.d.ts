@@ -23,7 +23,6 @@ export declare class ReportsService {
         late: number;
         absent: number;
         attendanceRate: number;
-        qrCheckedIn: number;
         manualCheckedIn: number;
     }>;
     getByDepartment(eventId: string, date?: string): Promise<any[]>;
@@ -38,7 +37,6 @@ export declare class ReportsService {
                 late: number;
                 absent: number;
                 attendanceRate: number;
-                qrCheckedIn: number;
                 manualCheckedIn: number;
             };
             records: {

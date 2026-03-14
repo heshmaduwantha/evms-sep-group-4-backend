@@ -42,7 +42,6 @@ export class ManualCheckinService {
         name: v.name,
         role: v.role,
         department: v.department,
-        pin: v.pin,
         checkedIn: isCheckedIn,
         time: formattedTime,
       };
@@ -160,7 +159,6 @@ export class ManualCheckinService {
       name: createAttendanceDto.name,
       role: createAttendanceDto.role,
       department: createAttendanceDto.department,
-      pin: `PIN_${Date.now().toString().slice(-4)}` // Generate temporary unique PIN
     });
     
     await this.volunteerRepository.save(volunteer);
@@ -182,7 +180,6 @@ export class ManualCheckinService {
         id: volunteer.id,
         name: volunteer.name,
         role: volunteer.role,
-        pin: volunteer.pin,
         checkedIn: isCheckedIn,
         time: attendance.checkInTime ? attendance.checkInTime.toLocaleTimeString('en-US', { 
           hour: '2-digit', minute: '2-digit', hour12: true 

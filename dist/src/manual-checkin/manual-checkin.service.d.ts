@@ -11,7 +11,6 @@ export declare class ManualCheckinService {
             name: string;
             role: string;
             department: string;
-            pin: string;
             checkedIn: boolean;
             time: string | null;
         }[];
@@ -52,7 +51,6 @@ export declare class ManualCheckinService {
             id: string;
             name: string;
             role: string;
-            pin: string;
             checkedIn: any;
             time: string | null;
         };

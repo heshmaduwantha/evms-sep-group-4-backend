@@ -26,8 +26,22 @@ let ReportsService = class ReportsService {
         this.attendanceRepository = attendanceRepository;
     }
     async getAttendanceReports(filters) {
-        const query = this.volunteerRepository.createQueryBuilder('volunteer')
-            .leftJoinAndSelect('volunteer.attendances', 'attendance', 'attendance.eventId = :eventId AND (:date IS NULL OR DATE(attendance.checkInTime) = DATE(:date))', { eventId: filters.eventId, date: filters.date || null });
+        const { eventId, date } = filters;
+        const query = this.volunteerRepository.createQueryBuilder('volunteer');
+        let start = null;
+        let end = null;
+        if (date && date !== '') {
+            start = `${date} 00:00:00`;
+            const d = new Date(date);
+            d.setUTCDate(d.getUTCDate() + 1);
+            end = d.toISOString().split('T')[0] + ' 00:00:00';
+        }
+        query.leftJoinAndSelect('volunteer.attendances', 'attendance', 'attendance.eventId = :eventId AND (:dateParam IS NULL OR (attendance.checkInTime >= :start AND attendance.checkInTime < :end))', {
+            eventId,
+            dateParam: (date && date !== '') ? date : null,
+            start,
+            end
+        });
         if (filters.department && filters.department !== 'all') {
             query.andWhere('volunteer.department = :department', { department: filters.department });
         }
@@ -56,15 +70,18 @@ let ReportsService = class ReportsService {
         const total = await this.volunteerRepository.count();
         const query = this.attendanceRepository.createQueryBuilder('attendance')
             .where('attendance.eventId = :eventId', { eventId });
-        if (date) {
-            query.andWhere('DATE(attendance.checkInTime) = DATE(:date)', { date });
+        if (date && date !== '') {
+            const start = `${date} 00:00:00`;
+            const d = new Date(date);
+            d.setUTCDate(d.getUTCDate() + 1);
+            const end = d.toISOString().split('T')[0] + ' 00:00:00';
+            query.andWhere('attendance.checkInTime >= :start AND attendance.checkInTime < :end', { start, end });
         }
         const attendances = await query.getMany();
         const present = attendances.filter(a => a.status === 'present').length;
         const late = attendances.filter(a => a.status === 'late').length;
         const absent = total - (present + late);
         const attendanceRate = total > 0 ? Math.round(((present + late) / total) * 100) : 0;
-        const qrCheckedIn = attendances.filter(a => a.checkInMethod === 'qr').length;
         const manualCheckedIn = attendances.filter(a => a.checkInMethod === 'manual').length;
         return {
             total,
@@ -72,7 +89,6 @@ let ReportsService = class ReportsService {
             late,
             absent,
             attendanceRate,
-            qrCheckedIn,
             manualCheckedIn,
         };
     }
@@ -90,8 +106,21 @@ let ReportsService = class ReportsService {
             stats.total++;
             const attendance = v.attendances?.find(a => {
                 const matchesEvent = a.eventId === eventId;
-                const matchesDate = !date || (a.checkInTime && new Date(a.checkInTime).toISOString().split('T')[0] === date);
-                return matchesEvent && matchesDate;
+                if (!date || date === '')
+                    return matchesEvent;
+                const checkInDate = a.checkInTime ? new Date(a.checkInTime) : null;
+                if (!checkInDate)
+                    return false;
+                const start = `${date} 00:00:00`;
+                const d = new Date(date);
+                d.setUTCDate(d.getUTCDate() + 1);
+                const end = d.toISOString().split('T')[0] + ' 00:00:00';
+                if (!a.checkInTime)
+                    return false;
+                const dStart = new Date(start);
+                const dEnd = new Date(end);
+                const dCheckIn = new Date(a.checkInTime);
+                return matchesEvent && dCheckIn >= dStart && dCheckIn < dEnd;
             });
             if (attendance?.status === 'present') {
                 stats.present++;

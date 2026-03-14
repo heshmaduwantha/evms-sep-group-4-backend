@@ -15,8 +15,6 @@ export class Volunteer {
   @Column()
   department: string;
 
-  @Column({ unique: true })
-  pin: string;
 
   @OneToMany(() => Attendance, (attendance) => attendance.volunteer)
   attendances: Attendance[];
