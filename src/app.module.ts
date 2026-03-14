@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { User } from './users/entities/user.entity';
+import { Event } from './events/entities/event.entity';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -22,13 +24,14 @@ import { User } from './users/entities/user.entity';
         username: configService.get<string>('PG_DB_USER'),
         password: configService.get<string>('PG_DB_PASSWORD'),
         database: configService.get<string>('PG_DB_NAME'),
-        entities: [User],
+        entities: [User, Event],
         synchronize: true, // Only for development!
       }),
       inject: [ConfigService],
     }),
     UsersModule,
     AuthModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

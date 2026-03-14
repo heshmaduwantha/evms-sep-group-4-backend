@@ -15,6 +15,8 @@ const app_service_1 = require("./app.service");
 const users_module_1 = require("./users/users.module");
 const auth_module_1 = require("./auth/auth.module");
 const user_entity_1 = require("./users/entities/user.entity");
+const event_entity_1 = require("./events/entities/event.entity");
+const events_module_1 = require("./events/events.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -34,13 +36,14 @@ exports.AppModule = AppModule = __decorate([
                     username: configService.get('PG_DB_USER'),
                     password: configService.get('PG_DB_PASSWORD'),
                     database: configService.get('PG_DB_NAME'),
-                    entities: [user_entity_1.User],
+                    entities: [user_entity_1.User, event_entity_1.Event],
                     synchronize: true,
                 }),
                 inject: [config_1.ConfigService],
             }),
             users_module_1.UsersModule,
             auth_module_1.AuthModule,
+            events_module_1.EventsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
