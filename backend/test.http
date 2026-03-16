@@ -1,0 +1,11 @@
+POST http://localhost:3000/events
+Content-Type: application/json
+
+{
+  "title": "Beach Cleanup",
+  "description": "Cleaning Galle Face beach",
+  "eventDate": "2026-04-01",
+  "eventTime": "08:00",
+  "location": "Galle Face",
+  "volunteersRequired": 50
+}

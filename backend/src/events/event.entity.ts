@@ -9,6 +9,7 @@ export enum EventStatus {
 
 @Entity()
 export class Event {
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -18,14 +19,17 @@ export class Event {
   @Column('text')
   description: string;
 
-  @Column()
-  eventDate: string;
+  @Column({ type: 'date' })
+  eventDate: Date;
 
   @Column()
   eventTime: string;
 
   @Column()
   location: string;
+
+  @Column()
+  volunteersRequired: number;
 
   @Column({
     type: 'enum',
