@@ -6,15 +6,7 @@ export declare class ReportsService {
     private attendanceRepository;
     constructor(volunteerRepository: Repository<Volunteer>, attendanceRepository: Repository<Attendance>);
     getAttendanceReports(filters: any): Promise<{
-        records: {
-            id: string;
-            name: string;
-            role: string;
-            dept: string;
-            status: string;
-            time: string | null;
-            method: string;
-        }[];
+        records: any[];
         totalRecords: number;
     }>;
     getSummary(eventId: string, date?: string): Promise<{
@@ -26,7 +18,7 @@ export declare class ReportsService {
         manualCheckedIn: number;
     }>;
     getByDepartment(eventId: string, date?: string): Promise<any[]>;
-    generatePDFReport(eventId: string): Promise<{
+    generatePDFReport(eventId: string, eventTitle?: string): Promise<{
         success: boolean;
         data: {
             reportName: string;
@@ -39,18 +31,10 @@ export declare class ReportsService {
                 attendanceRate: number;
                 manualCheckedIn: number;
             };
-            records: {
-                id: string;
-                name: string;
-                role: string;
-                dept: string;
-                status: string;
-                time: string | null;
-                method: string;
-            }[];
+            records: any[];
         };
     }>;
-    generateCSVReport(eventId: string): Promise<{
+    generateCSVReport(eventId: string, eventTitle?: string): Promise<{
         success: boolean;
         message: string;
         fileName: string;

@@ -45,6 +45,12 @@ export class AttendanceController {
     return this.attendanceService.getVolunteerCount();
   }
 
+  @Get('applications')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  getApplications() {
+    return this.attendanceService.getApplications();
+  }
+
   @Patch(':id')
   @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
   updateCheckIn(@Param('id') id: string, @Body() updateData: any) {

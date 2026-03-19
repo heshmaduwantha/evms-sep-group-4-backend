@@ -48,6 +48,7 @@ let ManualCheckinService = class ManualCheckinService {
                 department: v.department,
                 checkedIn: isCheckedIn,
                 time: formattedTime,
+                eventId: attendance?.eventId
             };
         });
         let filtered = formattedVolunteers;

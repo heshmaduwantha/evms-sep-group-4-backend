@@ -40,11 +40,11 @@ let ReportsController = class ReportsController {
     getByDepartment(eventId, date) {
         return this.reportsService.getByDepartment(eventId, date);
     }
-    exportPDF(eventId) {
-        return this.reportsService.generatePDFReport(eventId);
+    exportPDF(eventId, eventTitle) {
+        return this.reportsService.generatePDFReport(eventId, eventTitle);
     }
-    exportCSV(eventId) {
-        return this.reportsService.generateCSVReport(eventId);
+    exportCSV(eventId, eventTitle) {
+        return this.reportsService.generateCSVReport(eventId, eventTitle);
     }
 };
 exports.ReportsController = ReportsController;
@@ -81,16 +81,18 @@ __decorate([
     (0, common_1.Get)('export/pdf'),
     (0, roles_decorator_1.Roles)(role_enum_1.UserRole.ORGANIZER, role_enum_1.UserRole.ADMIN),
     __param(0, (0, common_1.Query)('eventId')),
+    __param(1, (0, common_1.Query)('eventTitle')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], ReportsController.prototype, "exportPDF", null);
 __decorate([
     (0, common_1.Get)('export/csv'),
     (0, roles_decorator_1.Roles)(role_enum_1.UserRole.ORGANIZER, role_enum_1.UserRole.ADMIN),
     __param(0, (0, common_1.Query)('eventId')),
+    __param(1, (0, common_1.Query)('eventTitle')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], ReportsController.prototype, "exportCSV", null);
 exports.ReportsController = ReportsController = __decorate([

@@ -91,7 +91,8 @@ export class AttendanceService {
         status: attendance ? attendance.status : 'absent',
         checkedInTime: attendance?.checkInTime
           ? new Date(attendance.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
-          : null
+          : null,
+        eventId: attendance?.eventId
       };
     }));
 
@@ -138,11 +139,13 @@ export class AttendanceService {
         volunteer,
         eventId,
         status: 'present',
-        checkInTime: new Date()
+        checkInTime: new Date(),
+        checkInMethod: 'manual'
       });
     } else {
       attendance.status = 'present'; // or 'late' depending on logic
       attendance.checkInTime = new Date();
+      attendance.checkInMethod = 'manual';
     }
 
     await this.attendanceRepository.save(attendance);
@@ -171,5 +174,41 @@ export class AttendanceService {
     const result = await this.attendanceRepository.delete(id);
     if (result.affected === 0) throw new NotFoundException('Attendance record not found');
     return { success: true };
+  }
+
+  async getApplications() {
+    // Treat 'absent' status attendances as "applications" for dashboard display
+    // in a real system this would be its own entity or status
+    const applications = await this.attendanceRepository.find({
+      where: { status: 'absent' },
+      order: { createdAt: 'DESC' },
+      take: 5,
+      relations: ['volunteer']
+    });
+
+    return applications.map(a => ({
+      id: a.id,
+      name: a.volunteer?.name || 'Unknown',
+      role: a.volunteer?.role || 'Volunteer',
+      event: a.eventId, // Controller or Frontend will map this to event name
+      time: this.getTimeAgo(a.createdAt),
+      status: 'pending',
+      createdAt: a.createdAt
+    }));
+  }
+
+  private getTimeAgo(date: Date): string {
+    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + ' years ago';
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + ' months ago';
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + ' days ago';
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + ' hours ago';
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + ' minutes ago';
+    return Math.floor(seconds) + ' seconds ago';
   }
 }

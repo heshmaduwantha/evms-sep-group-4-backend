@@ -20,6 +20,7 @@ export declare class AttendanceService {
         role: string;
         status: string;
         checkedInTime: string | null;
+        eventId: string | undefined;
     }[]>;
     getRecentCheckIns(eventId: string): Promise<{
         id: string;
@@ -39,4 +40,14 @@ export declare class AttendanceService {
     deleteCheckIn(id: string): Promise<{
         success: boolean;
     }>;
+    getApplications(): Promise<{
+        id: string;
+        name: string;
+        role: string;
+        event: string;
+        time: string;
+        status: string;
+        createdAt: Date;
+    }[]>;
+    private getTimeAgo;
 }

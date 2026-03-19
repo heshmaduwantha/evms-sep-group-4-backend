@@ -48,13 +48,19 @@ export class ReportsController {
 
   @Get('export/pdf')
   @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
-  exportPDF(@Query('eventId') eventId: string) {
-    return this.reportsService.generatePDFReport(eventId);
+  exportPDF(
+    @Query('eventId') eventId: string,
+    @Query('eventTitle') eventTitle?: string,
+  ) {
+    return this.reportsService.generatePDFReport(eventId, eventTitle);
   }
 
   @Get('export/csv')
   @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
-  exportCSV(@Query('eventId') eventId: string) {
-    return this.reportsService.generateCSVReport(eventId);
+  exportCSV(
+    @Query('eventId') eventId: string,
+    @Query('eventTitle') eventTitle?: string,
+  ) {
+    return this.reportsService.generateCSVReport(eventId, eventTitle);
   }
 }

@@ -40,6 +40,9 @@ let AttendanceController = class AttendanceController {
     getVolunteerCount() {
         return this.attendanceService.getVolunteerCount();
     }
+    getApplications() {
+        return this.attendanceService.getApplications();
+    }
     updateCheckIn(id, updateData) {
         return this.attendanceService.updateCheckIn(id, updateData);
     }
@@ -88,6 +91,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AttendanceController.prototype, "getVolunteerCount", null);
+__decorate([
+    (0, common_1.Get)('applications'),
+    (0, roles_decorator_1.Roles)(role_enum_1.UserRole.ORGANIZER, role_enum_1.UserRole.ADMIN),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AttendanceController.prototype, "getApplications", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     (0, roles_decorator_1.Roles)(role_enum_1.UserRole.ORGANIZER, role_enum_1.UserRole.ADMIN),

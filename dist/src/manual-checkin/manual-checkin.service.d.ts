@@ -13,6 +13,7 @@ export declare class ManualCheckinService {
             department: string;
             checkedIn: boolean;
             time: string | null;
+            eventId: string;
         }[];
         total: number;
         checkedIn: number;

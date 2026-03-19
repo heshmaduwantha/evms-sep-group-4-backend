@@ -12,6 +12,7 @@ export declare class ManualCheckinController {
             department: string;
             checkedIn: boolean;
             time: string | null;
+            eventId: string;
         }[];
         total: number;
         checkedIn: number;

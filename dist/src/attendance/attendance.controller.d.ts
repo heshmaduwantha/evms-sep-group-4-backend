@@ -16,6 +16,7 @@ export declare class AttendanceController {
         role: string;
         status: string;
         checkedInTime: string | null;
+        eventId: string | undefined;
     }[]>;
     checkIn(eventId: string, createCheckInDto: CreateCheckInDto): Promise<{
         success: boolean;
@@ -29,6 +30,15 @@ export declare class AttendanceController {
         status: string;
     }[]>;
     getVolunteerCount(): Promise<number>;
+    getApplications(): Promise<{
+        id: string;
+        name: string;
+        role: string;
+        event: string;
+        time: string;
+        status: string;
+        createdAt: Date;
+    }[]>;
     updateCheckIn(id: string, updateData: any): Promise<import("./entities/attendance.entity").Attendance>;
     deleteCheckIn(id: string): Promise<{
         success: boolean;

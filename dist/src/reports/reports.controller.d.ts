@@ -3,15 +3,7 @@ export declare class ReportsController {
     private readonly reportsService;
     constructor(reportsService: ReportsService);
     getAttendanceReports(eventId: string, status?: string, department?: string, date?: string): Promise<{
-        records: {
-            id: string;
-            name: string;
-            role: string;
-            dept: string;
-            status: string;
-            time: string | null;
-            method: string;
-        }[];
+        records: any[];
         totalRecords: number;
     }>;
     getSummary(eventId: string, date?: string): Promise<{
@@ -23,7 +15,7 @@ export declare class ReportsController {
         manualCheckedIn: number;
     }>;
     getByDepartment(eventId: string, date?: string): Promise<any[]>;
-    exportPDF(eventId: string): Promise<{
+    exportPDF(eventId: string, eventTitle?: string): Promise<{
         success: boolean;
         data: {
             reportName: string;
@@ -36,18 +28,10 @@ export declare class ReportsController {
                 attendanceRate: number;
                 manualCheckedIn: number;
             };
-            records: {
-                id: string;
-                name: string;
-                role: string;
-                dept: string;
-                status: string;
-                time: string | null;
-                method: string;
-            }[];
+            records: any[];
         };
     }>;
-    exportCSV(eventId: string): Promise<{
+    exportCSV(eventId: string, eventTitle?: string): Promise<{
         success: boolean;
         message: string;
         fileName: string;
