@@ -1,0 +1,65 @@
+import { Controller, Get, Post, Body, Param, UseGuards, Patch, Delete } from '@nestjs/common';
+import { AttendanceService } from './attendance.service';
+import { CreateCheckInDto } from './dto/create-check-in.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../users/enums/role.enum';
+
+@Controller('attendance')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class AttendanceController {
+  constructor(private readonly attendanceService: AttendanceService) { }
+
+  @Get('overview/:eventId')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  getAttendanceOverview(@Param('eventId') eventId: string) {
+    return this.attendanceService.getAttendanceOverview(eventId);
+  }
+
+  @Get('roster/:eventId')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  getVolunteerRoster(@Param('eventId') eventId: string) {
+    return this.attendanceService.getVolunteerRoster(eventId);
+  }
+
+  @Post('check-in/:eventId')
+  @Roles(UserRole.VOLUNTEER, UserRole.ORGANIZER, UserRole.ADMIN)
+  checkIn(
+    @Param('eventId') eventId: string,
+    @Body() createCheckInDto: CreateCheckInDto
+  ) {
+    return this.attendanceService.checkIn({ ...createCheckInDto, eventId });
+  }
+
+
+  @Get('recent-checkins/:eventId')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  getRecentCheckIns(@Param('eventId') eventId: string) {
+    return this.attendanceService.getRecentCheckIns(eventId);
+  }
+
+  @Get('volunteer-count')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  getVolunteerCount() {
+    return this.attendanceService.getVolunteerCount();
+  }
+
+  @Get('applications')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  getApplications() {
+    return this.attendanceService.getApplications();
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  updateCheckIn(@Param('id') id: string, @Body() updateData: any) {
+    return this.attendanceService.updateCheckIn(id, updateData);
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ORGANIZER, UserRole.ADMIN)
+  deleteCheckIn(@Param('id') id: string) {
+    return this.attendanceService.deleteCheckIn(id);
+  }
+}
