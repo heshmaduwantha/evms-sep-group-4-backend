@@ -1,3 +1,4 @@
+import { Patch } from '@nestjs/common'; // add this at top
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 export enum EventStatus {
@@ -43,4 +44,6 @@ export class Event {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+
 }
