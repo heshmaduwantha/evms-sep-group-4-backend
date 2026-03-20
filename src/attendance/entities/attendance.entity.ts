@@ -9,6 +9,9 @@ export class Attendance {
   @Column()
   eventId: string;
 
+  @Column({ name: 'volunteerId', type: 'uuid', nullable: true })
+  volunteerId: string;
+
   @ManyToOne(() => Volunteer, (volunteer) => volunteer.attendances, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'volunteerId' })
   volunteer: Volunteer;

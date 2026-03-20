@@ -13,12 +13,13 @@ const reports_controller_1 = require("./reports.controller");
 const reports_service_1 = require("./reports.service");
 const attendance_entity_1 = require("../attendance/entities/attendance.entity");
 const volunteer_entity_1 = require("../users/entities/volunteer.entity");
+const application_entity_1 = require("../applications/entities/application.entity");
 let ReportsModule = class ReportsModule {
 };
 exports.ReportsModule = ReportsModule;
 exports.ReportsModule = ReportsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([attendance_entity_1.Attendance, volunteer_entity_1.Volunteer])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([attendance_entity_1.Attendance, volunteer_entity_1.Volunteer, application_entity_1.Application])],
         controllers: [reports_controller_1.ReportsController],
         providers: [reports_service_1.ReportsService],
         exports: [reports_service_1.ReportsService],

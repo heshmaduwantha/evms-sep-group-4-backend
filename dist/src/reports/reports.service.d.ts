@@ -1,10 +1,12 @@
 import { Repository } from 'typeorm';
 import { Attendance } from '../attendance/entities/attendance.entity';
 import { Volunteer } from '../users/entities/volunteer.entity';
+import { Application } from '../applications/entities/application.entity';
 export declare class ReportsService {
     private volunteerRepository;
     private attendanceRepository;
-    constructor(volunteerRepository: Repository<Volunteer>, attendanceRepository: Repository<Attendance>);
+    private applicationRepository;
+    constructor(volunteerRepository: Repository<Volunteer>, attendanceRepository: Repository<Attendance>, applicationRepository: Repository<Application>);
     getAttendanceReports(filters: any): Promise<{
         records: any[];
         totalRecords: number;

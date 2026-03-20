@@ -18,30 +18,41 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const attendance_entity_1 = require("../attendance/entities/attendance.entity");
 const volunteer_entity_1 = require("../users/entities/volunteer.entity");
+const application_entity_1 = require("../applications/entities/application.entity");
+const application_status_enum_1 = require("../applications/enums/application-status.enum");
 let ReportsService = class ReportsService {
     volunteerRepository;
     attendanceRepository;
-    constructor(volunteerRepository, attendanceRepository) {
+    applicationRepository;
+    constructor(volunteerRepository, attendanceRepository, applicationRepository) {
         this.volunteerRepository = volunteerRepository;
         this.attendanceRepository = attendanceRepository;
+        this.applicationRepository = applicationRepository;
     }
     async getAttendanceReports(filters) {
         const { eventId, date, status, department } = filters;
         console.log(`[ReportsService] getAttendanceReports - Filters: eventId=${eventId}, date=${date}, status=${status}, department=${department}`);
-        const query = this.volunteerRepository.createQueryBuilder('volunteer');
-        if (eventId && eventId !== '') {
-            query.innerJoinAndSelect('volunteer.attendances', 'attendance', 'attendance.eventId = :eventId', { eventId });
-        }
-        else {
-            query.leftJoinAndSelect('volunteer.attendances', 'attendance');
-        }
+        const findOptions = {
+            relations: ['attendances'],
+        };
         if (department && department !== 'all') {
-            query.andWhere('LOWER(volunteer.department) = LOWER(:department)', { department });
+            findOptions.where = { department: department };
         }
-        const volunteers = await query.getMany();
+        const volunteers = await this.volunteerRepository.find(findOptions);
+        const appQuery = this.applicationRepository.createQueryBuilder('application')
+            .leftJoinAndSelect('application.user', 'user')
+            .leftJoinAndSelect('application.event', 'event')
+            .where('application.status = :status', { status: application_status_enum_1.ApplicationStatus.APPROVED });
+        if (eventId && eventId !== '') {
+            appQuery.andWhere('application.eventId = :eventId', { eventId });
+        }
+        const approvedApps = await appQuery.getMany();
         let records = [];
         volunteers.forEach(v => {
-            const attendances = v.attendances || [];
+            let attendances = v.attendances || [];
+            if (eventId && eventId !== '' && eventId !== 'all') {
+                attendances = attendances.filter(a => a.eventId === eventId);
+            }
             if (attendances.length === 0) {
                 records.push({
                     id: v.id,
@@ -51,7 +62,7 @@ let ReportsService = class ReportsService {
                     status: 'absent',
                     time: null,
                     method: 'manual',
-                    eventId: 'None'
+                    eventId: eventId || 'None'
                 });
             }
             else {
@@ -68,12 +79,50 @@ let ReportsService = class ReportsService {
                         dept: v.department,
                         status: a.status,
                         time: a.checkInTime ? new Date(a.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : null,
-                        method: 'manual',
+                        method: a.checkInMethod || 'manual',
                         eventId: a.eventId
                     });
                 });
             }
         });
+        approvedApps.forEach(app => {
+            if (date && date !== '') {
+                const appDate = new Date(app.updatedAt).toISOString().split('T')[0];
+                if (appDate !== date)
+                    return;
+            }
+            const name = app.user.email.split('@')[0];
+            const exists = records.find(r => r.name === name && r.eventId === app.event.id);
+            if (!exists) {
+                records.push({
+                    id: app.id,
+                    name: name,
+                    role: 'Volunteer',
+                    dept: 'Portal',
+                    status: 'present',
+                    time: new Date(app.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                    method: 'online',
+                    eventId: app.event.id
+                });
+            }
+        });
+        if (!eventId || eventId === '' || eventId === 'all') {
+            const consolidated = [];
+            const seenNames = new Set();
+            const sorted = records.sort((a, b) => {
+                const aVal = (a.status === 'present' || a.status === 'late') ? 1 : 0;
+                const bVal = (b.status === 'present' || b.status === 'late') ? 1 : 0;
+                return bVal - aVal;
+            });
+            sorted.forEach(r => {
+                const lowerName = r.name.toLowerCase();
+                if (!seenNames.has(lowerName)) {
+                    seenNames.add(lowerName);
+                    consolidated.push(r);
+                }
+            });
+            records = consolidated;
+        }
         if (status && status !== 'all') {
             records = records.filter(r => r.status === status);
         }
@@ -169,7 +218,9 @@ exports.ReportsService = ReportsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(volunteer_entity_1.Volunteer)),
     __param(1, (0, typeorm_1.InjectRepository)(attendance_entity_1.Attendance)),
+    __param(2, (0, typeorm_1.InjectRepository)(application_entity_1.Application)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository])
 ], ReportsService);
 //# sourceMappingURL=reports.service.js.map

@@ -2,10 +2,12 @@ import { Repository } from 'typeorm';
 import { Attendance } from './entities/attendance.entity';
 import { Volunteer } from '../users/entities/volunteer.entity';
 import { CreateCheckInDto } from './dto/create-check-in.dto';
+import { Application } from '../applications/entities/application.entity';
 export declare class AttendanceService {
     private attendanceRepository;
     private volunteerRepository;
-    constructor(attendanceRepository: Repository<Attendance>, volunteerRepository: Repository<Volunteer>);
+    private applicationRepository;
+    constructor(attendanceRepository: Repository<Attendance>, volunteerRepository: Repository<Volunteer>, applicationRepository: Repository<Application>);
     onModuleInit(): Promise<void>;
     getAttendanceOverview(eventId: string): Promise<{
         totalVolunteers: number;
@@ -14,19 +16,14 @@ export declare class AttendanceService {
         absent: number;
         attendanceRate: number;
     }>;
-    getVolunteerRoster(eventId: string): Promise<{
-        id: string;
-        name: string;
-        role: string;
-        status: string;
-        checkedInTime: string | null;
-        eventId: string | undefined;
-    }[]>;
-    getRecentCheckIns(eventId: string): Promise<{
+    getVolunteerRoster(eventId: string): Promise<any[]>;
+    getRecentCheckIns(eventId?: string): Promise<{
         id: string;
         name: string;
         time: string;
         status: string;
+        method: string;
+        timestamp: number;
     }[]>;
     checkIn(createCheckInDto: CreateCheckInDto & {
         eventId: string;

@@ -20,8 +20,10 @@ const events_module_1 = require("./events/events.module");
 const attendance_module_1 = require("./attendance/attendance.module");
 const manual_checkin_module_1 = require("./manual-checkin/manual-checkin.module");
 const reports_module_1 = require("./reports/reports.module");
+const applications_module_1 = require("./applications/applications.module");
 const volunteer_entity_1 = require("./users/entities/volunteer.entity");
 const attendance_entity_1 = require("./attendance/entities/attendance.entity");
+const application_entity_1 = require("./applications/entities/application.entity");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -41,7 +43,7 @@ exports.AppModule = AppModule = __decorate([
                     username: configService.get('PG_DB_USER'),
                     password: configService.get('PG_DB_PASSWORD'),
                     database: configService.get('PG_DB_NAME'),
-                    entities: [user_entity_1.User, event_entity_1.Event, volunteer_entity_1.Volunteer, attendance_entity_1.Attendance],
+                    entities: [user_entity_1.User, event_entity_1.Event, volunteer_entity_1.Volunteer, attendance_entity_1.Attendance, application_entity_1.Application],
                     autoLoadEntities: true,
                     synchronize: true,
                 }),
@@ -53,6 +55,7 @@ exports.AppModule = AppModule = __decorate([
             attendance_module_1.AttendanceModule,
             manual_checkin_module_1.ManualCheckinModule,
             reports_module_1.ReportsModule,
+            applications_module_1.ApplicationsModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

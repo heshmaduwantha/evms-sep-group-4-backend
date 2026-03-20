@@ -18,22 +18,28 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const attendance_entity_1 = require("../attendance/entities/attendance.entity");
 const volunteer_entity_1 = require("../users/entities/volunteer.entity");
+const application_entity_1 = require("../applications/entities/application.entity");
+const application_status_enum_1 = require("../applications/enums/application-status.enum");
 let ManualCheckinService = class ManualCheckinService {
     volunteerRepository;
     attendanceRepository;
-    constructor(volunteerRepository, attendanceRepository) {
+    applicationRepository;
+    constructor(volunteerRepository, attendanceRepository, applicationRepository) {
         this.volunteerRepository = volunteerRepository;
         this.attendanceRepository = attendanceRepository;
+        this.applicationRepository = applicationRepository;
     }
     async getVolunteers(eventId, search, status) {
-        const query = this.volunteerRepository.createQueryBuilder('volunteer')
-            .leftJoinAndSelect('volunteer.attendances', 'attendance', 'attendance.eventId = :eventId', { eventId });
-        if (search && search.trim()) {
-            query.andWhere('(LOWER(volunteer.name) LIKE LOWER(:search) OR LOWER(volunteer.role) LIKE LOWER(:search))', { search: `%${search}%` });
-        }
-        const volunteers = await query.getMany();
-        const formattedVolunteers = volunteers.map(v => {
-            const attendance = v.attendances?.[0];
+        const volunteers = await this.volunteerRepository.find({
+            relations: ['attendances']
+        });
+        const approvedApplications = await this.applicationRepository.find({
+            relations: ['user', 'event']
+        });
+        let formattedVolunteers = volunteers.map(v => {
+            const attendance = (eventId === 'all' || !eventId)
+                ? v.attendances?.[0]
+                : v.attendances?.find(a => a.eventId === eventId);
             const isCheckedIn = attendance?.status === 'present' || attendance?.status === 'late';
             let formattedTime = null;
             if (attendance?.checkInTime) {
@@ -48,20 +54,72 @@ let ManualCheckinService = class ManualCheckinService {
                 department: v.department,
                 checkedIn: isCheckedIn,
                 time: formattedTime,
-                eventId: attendance?.eventId
+                eventId: attendance?.eventId || (eventId === 'all' ? undefined : eventId),
+                checkInMethod: attendance?.checkInMethod || 'manual'
             };
         });
-        let filtered = formattedVolunteers;
-        if (status === 'checked-in') {
-            filtered = formattedVolunteers.filter(v => v.checkedIn);
+        if (eventId === 'all' || !eventId) {
+            const consolidated = [];
+            const seenNames = new Set();
+            formattedVolunteers.forEach(v => {
+                const lowerName = v.name.toLowerCase();
+                if (!seenNames.has(lowerName)) {
+                    seenNames.add(lowerName);
+                    consolidated.push(v);
+                }
+                else if (v.checkedIn) {
+                    const existing = consolidated.find(ext => ext.name.toLowerCase() === lowerName);
+                    if (existing && !existing.checkedIn) {
+                        existing.checkedIn = true;
+                        existing.time = v.time;
+                        existing.eventId = v.eventId;
+                    }
+                }
+            });
+            formattedVolunteers = consolidated;
+        }
+        const portalEntries = [];
+        const approvedApps = eventId === 'all' || !eventId
+            ? approvedApplications.filter(app => app.status === application_status_enum_1.ApplicationStatus.APPROVED)
+            : approvedApplications.filter(app => app.status === application_status_enum_1.ApplicationStatus.APPROVED && app.event.id === eventId);
+        approvedApps.forEach(app => {
+            const portalName = app.user.email.split('@')[0];
+            const lowerPortalName = portalName.toLowerCase();
+            const existsInManual = formattedVolunteers.some(v => v.name.toLowerCase() === lowerPortalName);
+            const existsInPortal = portalEntries.some(v => v.name.toLowerCase() === lowerPortalName);
+            if (!existsInManual && !existsInPortal) {
+                portalEntries.push({
+                    id: app.id,
+                    name: portalName,
+                    role: 'Volunteer',
+                    department: 'Portal',
+                    checkedIn: true,
+                    time: new Date(app.updatedAt).toLocaleTimeString('en-US', {
+                        hour: '2-digit', minute: '2-digit', hour12: true
+                    }),
+                    eventId: app.event.id,
+                    checkInMethod: 'online'
+                });
+            }
+        });
+        const allVolunteers = [...formattedVolunteers, ...portalEntries];
+        let filtered = allVolunteers;
+        if (search && search.trim()) {
+            const s = search.toLowerCase();
+            filtered = filtered.filter(v => v.name.toLowerCase().includes(s) ||
+                v.role.toLowerCase().includes(s) ||
+                v.department.toLowerCase().includes(s));
+        }
+        if (status === 'checked-in' || status === 'present') {
+            filtered = filtered.filter(v => v.checkedIn);
         }
         else if (status === 'absent') {
-            filtered = formattedVolunteers.filter(v => !v.checkedIn);
+            filtered = filtered.filter(v => !v.checkedIn);
         }
         return {
             volunteers: filtered,
-            total: formattedVolunteers.length,
-            checkedIn: formattedVolunteers.filter(v => v.checkedIn).length,
+            total: allVolunteers.length,
+            checkedIn: allVolunteers.filter(v => v.checkedIn).length,
         };
     }
     async getCheckinSummary(eventId) {
@@ -173,7 +231,9 @@ exports.ManualCheckinService = ManualCheckinService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(volunteer_entity_1.Volunteer)),
     __param(1, (0, typeorm_1.InjectRepository)(attendance_entity_1.Attendance)),
+    __param(2, (0, typeorm_1.InjectRepository)(application_entity_1.Application)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository])
 ], ManualCheckinService);
 //# sourceMappingURL=manual-checkin.service.js.map

@@ -13,12 +13,13 @@ const attendance_controller_1 = require("./attendance.controller");
 const attendance_service_1 = require("./attendance.service");
 const attendance_entity_1 = require("./entities/attendance.entity");
 const volunteer_entity_1 = require("../users/entities/volunteer.entity");
+const application_entity_1 = require("../applications/entities/application.entity");
 let AttendanceModule = class AttendanceModule {
 };
 exports.AttendanceModule = AttendanceModule;
 exports.AttendanceModule = AttendanceModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([attendance_entity_1.Attendance, volunteer_entity_1.Volunteer])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([attendance_entity_1.Attendance, volunteer_entity_1.Volunteer, application_entity_1.Application])],
         controllers: [attendance_controller_1.AttendanceController],
         providers: [attendance_service_1.AttendanceService],
         exports: [attendance_service_1.AttendanceService]

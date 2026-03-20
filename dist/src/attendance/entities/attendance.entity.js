@@ -15,6 +15,7 @@ const volunteer_entity_1 = require("../../users/entities/volunteer.entity");
 let Attendance = class Attendance {
     id;
     eventId;
+    volunteerId;
     volunteer;
     status;
     checkInTime;
@@ -31,6 +32,10 @@ __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], Attendance.prototype, "eventId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'volunteerId', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], Attendance.prototype, "volunteerId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => volunteer_entity_1.Volunteer, (volunteer) => volunteer.attendances, { eager: true, onDelete: 'CASCADE' }),
     (0, typeorm_1.JoinColumn)({ name: 'volunteerId' }),

@@ -1,20 +1,14 @@
 import { Repository } from 'typeorm';
 import { Attendance } from '../attendance/entities/attendance.entity';
 import { Volunteer } from '../users/entities/volunteer.entity';
+import { Application } from '../applications/entities/application.entity';
 export declare class ManualCheckinService {
     private volunteerRepository;
     private attendanceRepository;
-    constructor(volunteerRepository: Repository<Volunteer>, attendanceRepository: Repository<Attendance>);
+    private applicationRepository;
+    constructor(volunteerRepository: Repository<Volunteer>, attendanceRepository: Repository<Attendance>, applicationRepository: Repository<Application>);
     getVolunteers(eventId: string, search?: string, status?: string): Promise<{
-        volunteers: {
-            id: string;
-            name: string;
-            role: string;
-            department: string;
-            checkedIn: boolean;
-            time: string | null;
-            eventId: string;
-        }[];
+        volunteers: any[];
         total: number;
         checkedIn: number;
     }>;

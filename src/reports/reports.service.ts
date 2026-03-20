@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Attendance } from '../attendance/entities/attendance.entity';
 import { Volunteer } from '../users/entities/volunteer.entity';
+import { Application } from '../applications/entities/application.entity';
+import { ApplicationStatus } from '../applications/enums/application-status.enum';
 
 @Injectable()
 export class ReportsService {
@@ -11,37 +13,51 @@ export class ReportsService {
     private volunteerRepository: Repository<Volunteer>,
     @InjectRepository(Attendance)
     private attendanceRepository: Repository<Attendance>,
+    @InjectRepository(Application)
+    private applicationRepository: Repository<Application>,
   ) { }
 
   async getAttendanceReports(filters: any) {
     const { eventId, date, status, department } = filters;
     console.log(`[ReportsService] getAttendanceReports - Filters: eventId=${eventId}, date=${date}, status=${status}, department=${department}`);
 
-    const query = this.volunteerRepository.createQueryBuilder('volunteer');
-
-    if (eventId && eventId !== '') {
-      // SPECIFIC EVENT: Use innerJoinAndSelect to ONLY get volunteers with attendance for this event
-      query.innerJoinAndSelect('volunteer.attendances', 'attendance',
-        'attendance.eventId = :eventId',
-        { eventId }
-      );
-    } else {
-      // ALL EVENTS: Use leftJoinAndSelect to show all volunteers and their attendances if any
-      query.leftJoinAndSelect('volunteer.attendances', 'attendance');
-    }
+    const findOptions: any = {
+      relations: ['attendances'],
+    };
 
     if (department && department !== 'all') {
-      query.andWhere('LOWER(volunteer.department) = LOWER(:department)', { department });
+      findOptions.where = { department: department };
     }
 
-    const volunteers = await query.getMany();
+    const volunteers = await this.volunteerRepository.find(findOptions);
+    
+    // Fetch approved applications
+    const appQuery = this.applicationRepository.createQueryBuilder('application')
+      .leftJoinAndSelect('application.user', 'user')
+      .leftJoinAndSelect('application.event', 'event')
+      .where('application.status = :status', { status: ApplicationStatus.APPROVED });
+
+    if (eventId && eventId !== '') {
+      appQuery.andWhere('application.eventId = :eventId', { eventId });
+    }
+
+    const approvedApps = await appQuery.getMany();
+
     let records: any[] = [];
 
+    // Process manual volunteers
     volunteers.forEach(v => {
-      const attendances = v.attendances || [];
+      let attendances = v.attendances || [];
       
+      // Filter attendances for this specific event if requested
+      if (eventId && eventId !== '' && eventId !== 'all') {
+        attendances = attendances.filter(a => a.eventId === eventId);
+      }
+
       if (attendances.length === 0) {
-        // Only happens in "All Events" view because of left join
+        // Only show absent if we're not filtering for a specific event OR if they are clearly absent for that event
+        // (In this simplified system, we don't have a lookup table for who was INVITED/STAFFED on an event,
+        // so we treat anyone without an attendance record as absent)
         records.push({
           id: v.id,
           name: v.name,
@@ -50,7 +66,7 @@ export class ReportsService {
           status: 'absent',
           time: null,
           method: 'manual',
-          eventId: 'None'
+          eventId: eventId || 'None'
         });
       } else {
         attendances.forEach(a => {
@@ -67,12 +83,59 @@ export class ReportsService {
             dept: v.department,
             status: a.status,
             time: a.checkInTime ? new Date(a.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : null,
-            method: 'manual',
+            method: a.checkInMethod || 'manual',
             eventId: a.eventId
           });
         });
       }
     });
+
+    // Process portal applications
+    approvedApps.forEach(app => {
+      if (date && date !== '') {
+        const appDate = new Date(app.updatedAt).toISOString().split('T')[0];
+        if (appDate !== date) return;
+      }
+
+      // Avoid duplicates if same person exists in manual list (using name match as heuristic)
+      const name = app.user.email.split('@')[0];
+      const exists = records.find(r => r.name === name && r.eventId === app.event.id);
+      
+      if (!exists) {
+        records.push({
+          id: app.id,
+          name: name,
+          role: 'Volunteer',
+          dept: 'Portal',
+          status: 'present', // Approved portal apps are considered present "online"
+          time: new Date(app.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          method: 'online',
+          eventId: app.event.id
+        });
+      }
+    });
+
+    // 3. Consolidate duplicates if "All Events" is selected
+    if (!eventId || eventId === '' || eventId === 'all') {
+      const consolidated: any[] = [];
+      const seenNames = new Set<string>();
+
+      // Sort so 'present' or 'late' comes before 'absent'
+      const sorted = records.sort((a, b) => {
+        const aVal = (a.status === 'present' || a.status === 'late') ? 1 : 0;
+        const bVal = (b.status === 'present' || b.status === 'late') ? 1 : 0;
+        return bVal - aVal;
+      });
+
+      sorted.forEach(r => {
+        const lowerName = r.name.toLowerCase();
+        if (!seenNames.has(lowerName)) {
+          seenNames.add(lowerName);
+          consolidated.push(r);
+        }
+      });
+      records = consolidated;
+    }
 
     if (status && status !== 'all') {
       records = records.filter(r => r.status === status);

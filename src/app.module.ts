@@ -11,8 +11,10 @@ import { EventsModule } from './events/events.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { ManualCheckinModule } from './manual-checkin/manual-checkin.module';
 import { ReportsModule } from './reports/reports.module';
+import { ApplicationsModule } from './applications/applications.module';
 import { Volunteer } from './users/entities/volunteer.entity';
 import { Attendance } from './attendance/entities/attendance.entity';
+import { Application } from './applications/entities/application.entity';
 
 @Module({
   imports: [
@@ -29,7 +31,7 @@ import { Attendance } from './attendance/entities/attendance.entity';
         username: configService.get<string>('PG_DB_USER'),
         password: configService.get<string>('PG_DB_PASSWORD'),
         database: configService.get<string>('PG_DB_NAME'),
-        entities: [User, Event, Volunteer, Attendance],
+        entities: [User, Event, Volunteer, Attendance, Application],
         autoLoadEntities: true,
         synchronize: true, // Only for development!
       }),
@@ -41,6 +43,7 @@ import { Attendance } from './attendance/entities/attendance.entity';
     AttendanceModule,
     ManualCheckinModule,
     ReportsModule,
+    ApplicationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Attendance } from '../attendance/entities/attendance.entity';
 import { Volunteer } from '../users/entities/volunteer.entity';
+import { Application } from '../applications/entities/application.entity';
+import { ApplicationStatus } from '../applications/enums/application-status.enum';
 
 @Injectable()
 export class ManualCheckinService {
@@ -11,23 +13,26 @@ export class ManualCheckinService {
     private volunteerRepository: Repository<Volunteer>,
     @InjectRepository(Attendance)
     private attendanceRepository: Repository<Attendance>,
+    @InjectRepository(Application)
+    private applicationRepository: Repository<Application>,
   ) {}
 
   async getVolunteers(eventId: string, search?: string, status?: string) {
-    const query = this.volunteerRepository.createQueryBuilder('volunteer')
-      .leftJoinAndSelect('volunteer.attendances', 'attendance', 'attendance.eventId = :eventId', { eventId });
+    const volunteers = await this.volunteerRepository.find({
+      relations: ['attendances']
+    });
 
-    if (search && search.trim()) {
-      query.andWhere(
-        '(LOWER(volunteer.name) LIKE LOWER(:search) OR LOWER(volunteer.role) LIKE LOWER(:search))',
-        { search: `%${search}%` }
-      );
-    }
+    const approvedApplications = await this.applicationRepository.find({
+      relations: ['user', 'event']
+    });
 
-    const volunteers = await query.getMany();
-
-    const formattedVolunteers = volunteers.map(v => {
-      const attendance = v.attendances?.[0];
+    // 1. Initial mapping of manual volunteers
+    let formattedVolunteers = volunteers.map(v => {
+      // Find attendance for this specific event
+      const attendance = (eventId === 'all' || !eventId) 
+        ? v.attendances?.[0] 
+        : v.attendances?.find(a => a.eventId === eventId);
+      
       const isCheckedIn = attendance?.status === 'present' || attendance?.status === 'late';
       
       let formattedTime: string | null = null;
@@ -44,21 +49,89 @@ export class ManualCheckinService {
         department: v.department,
         checkedIn: isCheckedIn,
         time: formattedTime,
-        eventId: attendance?.eventId
+        eventId: attendance?.eventId || (eventId === 'all' ? undefined : eventId),
+        checkInMethod: attendance?.checkInMethod || 'manual'
       };
     });
 
-    let filtered = formattedVolunteers;
-    if (status === 'checked-in') {
-      filtered = formattedVolunteers.filter(v => v.checkedIn);
+    // 2. Consolidate duplicates if "All Events" is selected
+    if (eventId === 'all' || !eventId) {
+      const consolidated: any[] = [];
+      const seenNames = new Set<string>();
+
+      formattedVolunteers.forEach(v => {
+        const lowerName = v.name.toLowerCase();
+        if (!seenNames.has(lowerName)) {
+          seenNames.add(lowerName);
+          consolidated.push(v);
+        } else if (v.checkedIn) {
+          // If we see the same person again and they are checked in, update the existing entry to show checked in
+          const existing = consolidated.find(ext => ext.name.toLowerCase() === lowerName);
+          if (existing && !existing.checkedIn) {
+            existing.checkedIn = true;
+            existing.time = v.time;
+            existing.eventId = v.eventId;
+          }
+        }
+      });
+      formattedVolunteers = consolidated;
+    }
+
+    // 3. Add portal entries (approved applications)
+    const portalEntries: any[] = [];
+    const approvedApps = eventId === 'all' || !eventId 
+      ? approvedApplications.filter(app => app.status === ApplicationStatus.APPROVED)
+      : approvedApplications.filter(app => app.status === ApplicationStatus.APPROVED && app.event.id === eventId);
+
+    approvedApps.forEach(app => {
+      const portalName = app.user.email.split('@')[0];
+      const lowerPortalName = portalName.toLowerCase();
+      
+      // Check if already in manual volunteers (case-insensitive)
+      const existsInManual = formattedVolunteers.some(v => v.name.toLowerCase() === lowerPortalName);
+      const existsInPortal = portalEntries.some(v => v.name.toLowerCase() === lowerPortalName);
+
+      if (!existsInManual && !existsInPortal) {
+        portalEntries.push({
+          id: app.id,
+          name: portalName,
+          role: 'Volunteer',
+          department: 'Portal',
+          checkedIn: true,
+          time: new Date(app.updatedAt).toLocaleTimeString('en-US', { 
+            hour: '2-digit', minute: '2-digit', hour12: true 
+          }),
+          eventId: app.event.id,
+          checkInMethod: 'online'
+        });
+      }
+    });
+
+    // Combine manual and portal
+    const allVolunteers = [...formattedVolunteers, ...portalEntries];
+
+    // 4. Filtering (Search and Status)
+    let filtered = allVolunteers;
+    
+    if (search && search.trim()) {
+      const s = search.toLowerCase();
+      filtered = filtered.filter(v => 
+        v.name.toLowerCase().includes(s) || 
+        v.role.toLowerCase().includes(s) ||
+        v.department.toLowerCase().includes(s)
+      );
+    }
+
+    if (status === 'checked-in' || status === 'present') {
+      filtered = filtered.filter(v => v.checkedIn);
     } else if (status === 'absent') {
-      filtered = formattedVolunteers.filter(v => !v.checkedIn);
+      filtered = filtered.filter(v => !v.checkedIn);
     }
 
     return {
       volunteers: filtered,
-      total: formattedVolunteers.length,
-      checkedIn: formattedVolunteers.filter(v => v.checkedIn).length,
+      total: allVolunteers.length,
+      checkedIn: allVolunteers.filter(v => v.checkedIn).length,
     };
   }
 

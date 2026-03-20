@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Attendance } from './entities/attendance.entity';
 import { Volunteer } from '../users/entities/volunteer.entity';
 import { CreateCheckInDto } from './dto/create-check-in.dto';
+import { Application } from '../applications/entities/application.entity';
+import { ApplicationStatus } from '../applications/enums/application-status.enum';
 
 @Injectable()
 export class AttendanceService {
@@ -12,6 +14,8 @@ export class AttendanceService {
     private attendanceRepository: Repository<Attendance>,
     @InjectRepository(Volunteer)
     private volunteerRepository: Repository<Volunteer>,
+    @InjectRepository(Application)
+    private applicationRepository: Repository<Application>,
   ) { }
 
   async onModuleInit() {
@@ -52,17 +56,37 @@ export class AttendanceService {
   }
 
   async getAttendanceOverview(eventId: string) {
-    const totalVolunteers = await this.volunteerRepository.count();
+    const isAll = eventId === 'all' || !eventId || eventId === '';
+    
+    const totalVolunteersCount = await this.volunteerRepository.count();
 
-    // In a real app we would count specific to eventId and maybe those invited to the event
+    // Fetch manual attendances
     const attendances = await this.attendanceRepository.find({
-      where: { eventId }
+      where: isAll ? {} : { eventId }
     });
 
-    const checkedIn = attendances.filter(a => a.status === 'present').length;
-    const lateArrivals = attendances.filter(a => a.status === 'late').length;
+    // Fetch portal attendances (approved apps)
+    const portalAttendances = await this.applicationRepository.count({
+      where: isAll 
+        ? { status: ApplicationStatus.APPROVED } 
+        : { event: { id: eventId }, status: ApplicationStatus.APPROVED }
+    });
 
-    // Assuming anyone not 'present' or 'late' is absent (or just total - (checkedIn + late))
+    const manualCheckedIn = attendances.filter(a => a.status === 'present').length;
+    const manualLate = attendances.filter(a => a.status === 'late').length;
+
+    const checkedIn = manualCheckedIn + portalAttendances;
+    const lateArrivals = manualLate;
+
+    // Total potential volunteers (manual + portal)
+    const portalVolunteersCount = await this.applicationRepository.count({
+      where: isAll 
+        ? { status: ApplicationStatus.APPROVED } 
+        : { event: { id: eventId }, status: ApplicationStatus.APPROVED }
+    });
+    
+    const totalVolunteers = totalVolunteersCount + portalVolunteersCount;
+
     const absent = totalVolunteers - (checkedIn + lateArrivals);
     const attendanceRate = totalVolunteers > 0 ? Math.round(((checkedIn + lateArrivals) / totalVolunteers) * 100) : 0;
 
@@ -76,13 +100,17 @@ export class AttendanceService {
   }
 
   async getVolunteerRoster(eventId: string) {
-    // Get all volunteers and their attendance for this event
-    const volunteers = await this.volunteerRepository.find();
+    const isAll = eventId === 'all' || !eventId || eventId === '';
+    
+    // Get all manual volunteers and their attendance
+    const volunteers = await this.volunteerRepository.find({
+      relations: ['attendances']
+    });
 
-    const rosters = await Promise.all(volunteers.map(async (v) => {
-      const attendance = await this.attendanceRepository.findOne({
-        where: { volunteer: { id: v.id }, eventId }
-      });
+    let manualRoster = volunteers.map((v) => {
+      const attendance = isAll 
+        ? v.attendances?.[0]
+        : v.attendances?.find(a => a.eventId === eventId);
 
       return {
         id: v.id,
@@ -92,27 +120,110 @@ export class AttendanceService {
         checkedInTime: attendance?.checkInTime
           ? new Date(attendance.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
           : null,
-        eventId: attendance?.eventId
+        eventId: attendance?.eventId || (isAll ? undefined : eventId),
+        method: 'manual'
       };
-    }));
+    });
 
-    return rosters;
+    // Consolidation by name for manual roster if 'all'
+    if (isAll) {
+      const consolidated: any[] = [];
+      const seenNames = new Set<string>();
+      manualRoster.sort((a,b) => (a.status !== 'absent' ? -1 : 1)); // Prioritize checked in
+      manualRoster.forEach(r => {
+        if (!seenNames.has(r.name.toLowerCase())) {
+          seenNames.add(r.name.toLowerCase());
+          consolidated.push(r);
+        }
+      });
+      manualRoster = consolidated;
+    }
+
+    // Get approved portal applications
+    const portalApps = await this.applicationRepository.find({
+      where: isAll 
+        ? { status: ApplicationStatus.APPROVED } 
+        : { event: { id: eventId }, status: ApplicationStatus.APPROVED },
+      relations: ['user', 'event']
+    });
+
+    const portalRoster: any[] = [];
+    const seenPortalNames = new Set<string>();
+
+    portalApps.forEach(app => {
+      const name = app.user.email.split('@')[0];
+      const lowerName = name.toLowerCase();
+      
+      if (!isAll || !seenPortalNames.has(lowerName)) {
+        if (isAll) seenPortalNames.add(lowerName);
+        
+        // Also avoid duplicating manual entries
+        if (!isAll || !manualRoster.some(m => m.name.toLowerCase() === lowerName)) {
+          portalRoster.push({
+            id: app.id,
+            name: name,
+            role: 'Volunteer',
+            status: 'present',
+            checkedInTime: new Date(app.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+            eventId: app.event.id,
+            method: 'online'
+          });
+        }
+      }
+    });
+
+    return [...manualRoster, ...portalRoster];
   }
 
-  async getRecentCheckIns(eventId: string) {
-    const recent = await this.attendanceRepository.find({
-      where: { eventId, status: 'present' }, // 'present' or 'late'
+  async getRecentCheckIns(eventId?: string) {
+    const whereClause: any = { status: 'present' };
+    if (eventId && eventId !== '' && eventId !== 'all') {
+      whereClause.eventId = eventId;
+    }
+
+    const recentAttendance = await this.attendanceRepository.find({
+      where: whereClause,
       order: { checkInTime: 'DESC' },
       take: 10,
       relations: ['volunteer']
     });
 
-    return recent.map(a => ({
-      id: a.id,
-      name: a.volunteer?.name || 'Unknown',
-      time: a.checkInTime ? new Date(a.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '',
-      status: a.status
-    }));
+    const recentAppsQuery = this.applicationRepository.createQueryBuilder('application')
+      .leftJoinAndSelect('application.user', 'user')
+      .where('application.status = :status', { status: ApplicationStatus.APPROVED });
+
+    if (eventId && eventId !== '' && eventId !== 'all') {
+      recentAppsQuery.andWhere('application.eventId = :eventId', { eventId });
+    }
+
+    const recentApps = await recentAppsQuery
+      .orderBy('application.updatedAt', 'DESC')
+      .take(10)
+      .getMany();
+
+    const allRecent = [
+      ...recentAttendance.map(a => ({
+        id: a.id,
+        name: a.volunteer?.name || 'Unknown',
+        time: a.checkInTime ? new Date(a.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '',
+        status: a.status,
+        method: a.checkInMethod || 'manual',
+        timestamp: a.checkInTime ? new Date(a.checkInTime).getTime() : 0
+      })),
+      ...recentApps.map(app => ({
+        id: app.id,
+        name: app.user.email.split('@')[0],
+        time: new Date(app.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        status: 'present',
+        method: 'online',
+        timestamp: new Date(app.updatedAt).getTime()
+      }))
+    ];
+
+    // Sort combined list by timestamp DESC
+    return allRecent
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 10);
   }
 
   async checkIn(createCheckInDto: CreateCheckInDto & { eventId: string }) {

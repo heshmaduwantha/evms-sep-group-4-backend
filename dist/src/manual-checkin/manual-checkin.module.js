@@ -13,12 +13,13 @@ const manual_checkin_controller_1 = require("./manual-checkin.controller");
 const manual_checkin_service_1 = require("./manual-checkin.service");
 const attendance_entity_1 = require("../attendance/entities/attendance.entity");
 const volunteer_entity_1 = require("../users/entities/volunteer.entity");
+const application_entity_1 = require("../applications/entities/application.entity");
 let ManualCheckinModule = class ManualCheckinModule {
 };
 exports.ManualCheckinModule = ManualCheckinModule;
 exports.ManualCheckinModule = ManualCheckinModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([attendance_entity_1.Attendance, volunteer_entity_1.Volunteer])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([attendance_entity_1.Attendance, volunteer_entity_1.Volunteer, application_entity_1.Application])],
         controllers: [manual_checkin_controller_1.ManualCheckinController],
         providers: [manual_checkin_service_1.ManualCheckinService],
         exports: [manual_checkin_service_1.ManualCheckinService],

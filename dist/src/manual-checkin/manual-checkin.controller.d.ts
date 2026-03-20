@@ -5,15 +5,7 @@ export declare class ManualCheckinController {
     private readonly manualCheckinService;
     constructor(manualCheckinService: ManualCheckinService);
     getVolunteers(eventId: string, search?: string, status?: string): Promise<{
-        volunteers: {
-            id: string;
-            name: string;
-            role: string;
-            department: string;
-            checkedIn: boolean;
-            time: string | null;
-            eventId: string;
-        }[];
+        volunteers: any[];
         total: number;
         checkedIn: number;
     }>;

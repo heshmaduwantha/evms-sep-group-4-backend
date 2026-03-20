@@ -10,14 +10,7 @@ export declare class AttendanceController {
         absent: number;
         attendanceRate: number;
     }>;
-    getVolunteerRoster(eventId: string): Promise<{
-        id: string;
-        name: string;
-        role: string;
-        status: string;
-        checkedInTime: string | null;
-        eventId: string | undefined;
-    }[]>;
+    getVolunteerRoster(eventId: string): Promise<any[]>;
     checkIn(eventId: string, createCheckInDto: CreateCheckInDto): Promise<{
         success: boolean;
         message: string;
@@ -28,6 +21,8 @@ export declare class AttendanceController {
         name: string;
         time: string;
         status: string;
+        method: string;
+        timestamp: number;
     }[]>;
     getVolunteerCount(): Promise<number>;
     getApplications(): Promise<{

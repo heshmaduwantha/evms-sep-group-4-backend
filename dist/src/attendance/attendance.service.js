@@ -18,12 +18,16 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const attendance_entity_1 = require("./entities/attendance.entity");
 const volunteer_entity_1 = require("../users/entities/volunteer.entity");
+const application_entity_1 = require("../applications/entities/application.entity");
+const application_status_enum_1 = require("../applications/enums/application-status.enum");
 let AttendanceService = class AttendanceService {
     attendanceRepository;
     volunteerRepository;
-    constructor(attendanceRepository, volunteerRepository) {
+    applicationRepository;
+    constructor(attendanceRepository, volunteerRepository, applicationRepository) {
         this.attendanceRepository = attendanceRepository;
         this.volunteerRepository = volunteerRepository;
+        this.applicationRepository = applicationRepository;
     }
     async onModuleInit() {
         const vCount = await this.volunteerRepository.count();
@@ -59,12 +63,26 @@ let AttendanceService = class AttendanceService {
         }
     }
     async getAttendanceOverview(eventId) {
-        const totalVolunteers = await this.volunteerRepository.count();
+        const isAll = eventId === 'all' || !eventId || eventId === '';
+        const totalVolunteersCount = await this.volunteerRepository.count();
         const attendances = await this.attendanceRepository.find({
-            where: { eventId }
+            where: isAll ? {} : { eventId }
         });
-        const checkedIn = attendances.filter(a => a.status === 'present').length;
-        const lateArrivals = attendances.filter(a => a.status === 'late').length;
+        const portalAttendances = await this.applicationRepository.count({
+            where: isAll
+                ? { status: application_status_enum_1.ApplicationStatus.APPROVED }
+                : { event: { id: eventId }, status: application_status_enum_1.ApplicationStatus.APPROVED }
+        });
+        const manualCheckedIn = attendances.filter(a => a.status === 'present').length;
+        const manualLate = attendances.filter(a => a.status === 'late').length;
+        const checkedIn = manualCheckedIn + portalAttendances;
+        const lateArrivals = manualLate;
+        const portalVolunteersCount = await this.applicationRepository.count({
+            where: isAll
+                ? { status: application_status_enum_1.ApplicationStatus.APPROVED }
+                : { event: { id: eventId }, status: application_status_enum_1.ApplicationStatus.APPROVED }
+        });
+        const totalVolunteers = totalVolunteersCount + portalVolunteersCount;
         const absent = totalVolunteers - (checkedIn + lateArrivals);
         const attendanceRate = totalVolunteers > 0 ? Math.round(((checkedIn + lateArrivals) / totalVolunteers) * 100) : 0;
         return {
@@ -76,11 +94,14 @@ let AttendanceService = class AttendanceService {
         };
     }
     async getVolunteerRoster(eventId) {
-        const volunteers = await this.volunteerRepository.find();
-        const rosters = await Promise.all(volunteers.map(async (v) => {
-            const attendance = await this.attendanceRepository.findOne({
-                where: { volunteer: { id: v.id }, eventId }
-            });
+        const isAll = eventId === 'all' || !eventId || eventId === '';
+        const volunteers = await this.volunteerRepository.find({
+            relations: ['attendances']
+        });
+        let manualRoster = volunteers.map((v) => {
+            const attendance = isAll
+                ? v.attendances?.[0]
+                : v.attendances?.find(a => a.eventId === eventId);
             return {
                 id: v.id,
                 name: v.name,
@@ -89,24 +110,93 @@ let AttendanceService = class AttendanceService {
                 checkedInTime: attendance?.checkInTime
                     ? new Date(attendance.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
                     : null,
-                eventId: attendance?.eventId
+                eventId: attendance?.eventId || (isAll ? undefined : eventId),
+                method: 'manual'
             };
-        }));
-        return rosters;
+        });
+        if (isAll) {
+            const consolidated = [];
+            const seenNames = new Set();
+            manualRoster.sort((a, b) => (a.status !== 'absent' ? -1 : 1));
+            manualRoster.forEach(r => {
+                if (!seenNames.has(r.name.toLowerCase())) {
+                    seenNames.add(r.name.toLowerCase());
+                    consolidated.push(r);
+                }
+            });
+            manualRoster = consolidated;
+        }
+        const portalApps = await this.applicationRepository.find({
+            where: isAll
+                ? { status: application_status_enum_1.ApplicationStatus.APPROVED }
+                : { event: { id: eventId }, status: application_status_enum_1.ApplicationStatus.APPROVED },
+            relations: ['user', 'event']
+        });
+        const portalRoster = [];
+        const seenPortalNames = new Set();
+        portalApps.forEach(app => {
+            const name = app.user.email.split('@')[0];
+            const lowerName = name.toLowerCase();
+            if (!isAll || !seenPortalNames.has(lowerName)) {
+                if (isAll)
+                    seenPortalNames.add(lowerName);
+                if (!isAll || !manualRoster.some(m => m.name.toLowerCase() === lowerName)) {
+                    portalRoster.push({
+                        id: app.id,
+                        name: name,
+                        role: 'Volunteer',
+                        status: 'present',
+                        checkedInTime: new Date(app.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                        eventId: app.event.id,
+                        method: 'online'
+                    });
+                }
+            }
+        });
+        return [...manualRoster, ...portalRoster];
     }
     async getRecentCheckIns(eventId) {
-        const recent = await this.attendanceRepository.find({
-            where: { eventId, status: 'present' },
+        const whereClause = { status: 'present' };
+        if (eventId && eventId !== '' && eventId !== 'all') {
+            whereClause.eventId = eventId;
+        }
+        const recentAttendance = await this.attendanceRepository.find({
+            where: whereClause,
             order: { checkInTime: 'DESC' },
             take: 10,
             relations: ['volunteer']
         });
-        return recent.map(a => ({
-            id: a.id,
-            name: a.volunteer?.name || 'Unknown',
-            time: a.checkInTime ? new Date(a.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '',
-            status: a.status
-        }));
+        const recentAppsQuery = this.applicationRepository.createQueryBuilder('application')
+            .leftJoinAndSelect('application.user', 'user')
+            .where('application.status = :status', { status: application_status_enum_1.ApplicationStatus.APPROVED });
+        if (eventId && eventId !== '' && eventId !== 'all') {
+            recentAppsQuery.andWhere('application.eventId = :eventId', { eventId });
+        }
+        const recentApps = await recentAppsQuery
+            .orderBy('application.updatedAt', 'DESC')
+            .take(10)
+            .getMany();
+        const allRecent = [
+            ...recentAttendance.map(a => ({
+                id: a.id,
+                name: a.volunteer?.name || 'Unknown',
+                time: a.checkInTime ? new Date(a.checkInTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '',
+                status: a.status,
+                method: a.checkInMethod || 'manual',
+                timestamp: a.checkInTime ? new Date(a.checkInTime).getTime() : 0
+            })),
+            ...recentApps.map(app => ({
+                id: app.id,
+                name: app.user.email.split('@')[0],
+                time: new Date(app.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                status: 'present',
+                method: 'online',
+                timestamp: new Date(app.updatedAt).getTime()
+            }))
+        ];
+        return allRecent
+            .sort((a, b) => b.timestamp - a.timestamp)
+            .slice(0, 10);
     }
     async checkIn(createCheckInDto) {
         const { eventId } = createCheckInDto;
@@ -199,7 +289,9 @@ exports.AttendanceService = AttendanceService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(attendance_entity_1.Attendance)),
     __param(1, (0, typeorm_1.InjectRepository)(volunteer_entity_1.Volunteer)),
+    __param(2, (0, typeorm_1.InjectRepository)(application_entity_1.Application)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository])
 ], AttendanceService);
 //# sourceMappingURL=attendance.service.js.map
