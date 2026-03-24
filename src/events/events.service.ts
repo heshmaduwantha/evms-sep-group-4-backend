@@ -21,6 +21,22 @@ export class EventsService {
     return this.eventRepository.find();
   }
 
+  async getStats(): Promise<any> {
+    const events = await this.eventRepository.find();
+    
+    const totalEvents = events.length;
+    const activeEvents = events.filter(e => e.status === 'ONGOING' || e.status === 'UPCOMING').length;
+    const completedEvents = events.filter(e => e.status === 'COMPLETED').length;
+    const totalVolunteersRequired = events.reduce((sum, e) => sum + (e.volunteersRequired || 0), 0);
+
+    return {
+      totalEvents,
+      activeEvents,
+      completedEvents,
+      totalVolunteersRequired
+    };
+  }
+
   async findOne(id: string): Promise<Event | null> {
   return this.eventRepository.findOneBy({ id });
 }

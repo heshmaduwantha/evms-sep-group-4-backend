@@ -18,6 +18,11 @@ export class EventsController {
     return this.eventsService.findAll();
   }
 
+  @Get('stats')
+  getStats(): Promise<any> {
+    return this.eventsService.getStats();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string): Promise<Event | null> {
       return this.eventsService.findOne(id);

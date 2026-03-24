@@ -1,0 +1,6 @@
+export declare enum ApplicationStatus {
+    PENDING = "pending",
+    APPROVED = "approved",
+    REJECTED = "rejected",
+    WAITLISTED = "waitlisted"
+}
