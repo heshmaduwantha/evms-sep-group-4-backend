@@ -22,6 +22,7 @@ const manual_checkin_module_1 = require("./manual-checkin/manual-checkin.module"
 const reports_module_1 = require("./reports/reports.module");
 const volunteer_entity_1 = require("./users/entities/volunteer.entity");
 const attendance_entity_1 = require("./attendance/entities/attendance.entity");
+const roles_module_1 = require("./roles/roles.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -53,6 +54,7 @@ exports.AppModule = AppModule = __decorate([
             attendance_module_1.AttendanceModule,
             manual_checkin_module_1.ManualCheckinModule,
             reports_module_1.ReportsModule,
+            roles_module_1.RolesModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

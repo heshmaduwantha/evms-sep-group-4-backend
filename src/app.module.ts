@@ -13,6 +13,10 @@ import { ManualCheckinModule } from './manual-checkin/manual-checkin.module';
 import { ReportsModule } from './reports/reports.module';
 import { Volunteer } from './users/entities/volunteer.entity';
 import { Attendance } from './attendance/entities/attendance.entity';
+// ── Roles & Assignments ──────────────────────────────────────────────
+import { RolesModule } from './roles/roles.module';
+import { Role } from './roles/entities/role.entity';
+
 
 @Module({
   imports: [
@@ -41,6 +45,7 @@ import { Attendance } from './attendance/entities/attendance.entity';
     AttendanceModule,
     ManualCheckinModule,
     ReportsModule,
+    RolesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
