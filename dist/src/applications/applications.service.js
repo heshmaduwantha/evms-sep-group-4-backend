@@ -54,7 +54,7 @@ let ApplicationsService = class ApplicationsService {
 =======
 >>>>>>> origin/role_assignment_management_backend
     async create(userId, createApplicationDto) {
-        const { eventId, motivation, experience, skills } = createApplicationDto;
+        const { eventId, motivation, experience, skills, location, gender, experienceDetails } = createApplicationDto;
         const event = await this.eventsRepository.findOne({ where: { id: eventId } });
         if (!event) {
             throw new common_1.NotFoundException('Event not found');
@@ -84,6 +84,9 @@ let ApplicationsService = class ApplicationsService {
             motivation,
             experience,
             skills,
+            location,
+            gender,
+            experienceDetails,
             status: application_status_enum_1.ApplicationStatus.PENDING,
         });
         return this.applicationsRepository.save(application);

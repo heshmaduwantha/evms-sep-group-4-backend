@@ -42,7 +42,7 @@ export class ApplicationsService implements OnModuleInit {
         }, 5000);
     }
     async create(userId: string, createApplicationDto: CreateApplicationDto): Promise<Application> {
-        const { eventId, motivation, experience, skills } = createApplicationDto;
+        const { eventId, motivation, experience, skills, location, gender, experienceDetails } = createApplicationDto;
 
         const event = await this.eventsRepository.findOne({ where: { id: eventId } });
         if (!event) {
@@ -79,6 +79,9 @@ export class ApplicationsService implements OnModuleInit {
             motivation,
             experience,
             skills,
+            location,
+            gender,
+            experienceDetails,
             status: ApplicationStatus.PENDING,
         });
 
