@@ -23,7 +23,11 @@ const reports_module_1 = require("./reports/reports.module");
 const applications_module_1 = require("./applications/applications.module");
 const volunteer_entity_1 = require("./users/entities/volunteer.entity");
 const attendance_entity_1 = require("./attendance/entities/attendance.entity");
+<<<<<<< HEAD
 const application_entity_1 = require("./applications/entities/application.entity");
+=======
+const roles_module_1 = require("./roles/roles.module");
+>>>>>>> origin/role_assignment_management_backend
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -55,7 +59,11 @@ exports.AppModule = AppModule = __decorate([
             attendance_module_1.AttendanceModule,
             manual_checkin_module_1.ManualCheckinModule,
             reports_module_1.ReportsModule,
+<<<<<<< HEAD
             applications_module_1.ApplicationsModule,
+=======
+            roles_module_1.RolesModule,
+>>>>>>> origin/role_assignment_management_backend
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

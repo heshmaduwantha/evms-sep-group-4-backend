@@ -41,7 +41,6 @@ export class ApplicationsService implements OnModuleInit {
             }
         }, 5000);
     }
-
     async create(userId: string, createApplicationDto: CreateApplicationDto): Promise<Application> {
         const { eventId, motivation, experience, skills } = createApplicationDto;
 

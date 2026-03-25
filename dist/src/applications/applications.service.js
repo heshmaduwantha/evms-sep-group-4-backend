@@ -29,6 +29,7 @@ let ApplicationsService = class ApplicationsService {
         this.eventsRepository = eventsRepository;
         this.usersRepository = usersRepository;
     }
+<<<<<<< HEAD
     async onModuleInit() {
         setTimeout(async () => {
             const count = await this.applicationsRepository.count();
@@ -50,6 +51,8 @@ let ApplicationsService = class ApplicationsService {
             }
         }, 5000);
     }
+=======
+>>>>>>> origin/role_assignment_management_backend
     async create(userId, createApplicationDto) {
         const { eventId, motivation, experience, skills } = createApplicationDto;
         const event = await this.eventsRepository.findOne({ where: { id: eventId } });
