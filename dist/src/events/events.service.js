@@ -22,6 +22,34 @@ let EventsService = class EventsService {
     constructor(eventRepository) {
         this.eventRepository = eventRepository;
     }
+    async onModuleInit() {
+        const count = await this.eventRepository.count();
+        if (count === 0) {
+            await this.eventRepository.save([
+                {
+                    id: 'event-1',
+                    title: 'Spring Charity Gala',
+                    description: 'Annual charity event to support local youth programs.',
+                    eventDate: new Date('2026-05-15'),
+                    eventTime: '18:00',
+                    location: 'Grand Ballroom, City Hotel',
+                    volunteersRequired: 50,
+                    status: 'UPCOMING'
+                },
+                {
+                    id: 'event-2',
+                    title: 'Tech Conference 2026',
+                    description: 'A gathering of the best minds in technology.',
+                    eventDate: new Date('2026-06-20'),
+                    eventTime: '09:00',
+                    location: 'Convention Center',
+                    volunteersRequired: 30,
+                    status: 'UPCOMING'
+                }
+            ]);
+            console.log('[EventsService] Seeded default events: event-1, event-2');
+        }
+    }
     async createEvent(createEventDto) {
         const event = this.eventRepository.create(createEventDto);
         return this.eventRepository.save(event);

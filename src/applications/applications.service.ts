@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Application } from './entities/application.entity';
@@ -8,7 +8,7 @@ import { Event } from '../events/entities/event.entity';
 import { User } from '../users/entities/user.entity';
 
 @Injectable()
-export class ApplicationsService {
+export class ApplicationsService implements OnModuleInit {
     constructor(
         @InjectRepository(Application)
         private applicationsRepository: Repository<Application>,
@@ -17,6 +17,30 @@ export class ApplicationsService {
         @InjectRepository(User)
         private usersRepository: Repository<User>,
     ) {}
+
+    async onModuleInit() {
+        // Wait a bit for other services to seed
+        setTimeout(async () => {
+            const count = await this.applicationsRepository.count();
+            if (count === 0) {
+                const volunteer = await this.usersRepository.findOne({ where: { email: 'volunteer@example.com' } });
+                const event = await this.eventsRepository.findOne({ where: { id: 'event-1' } });
+
+                if (volunteer && event) {
+                    await this.applicationsRepository.save({
+                        user: volunteer,
+                        event: event,
+                        status: ApplicationStatus.PENDING,
+                        motivation: 'I would love to help with the charity gala!',
+                        experience: 'Previous experience in event coordination.',
+                        skills: 'Communication, Teamwork',
+                        appliedDate: new Date()
+                    });
+                    console.log('[ApplicationsService] Seeded default application for volunteer@example.com to event-1');
+                }
+            }
+        }, 5000);
+    }
 
     async create(userId: string, createApplicationDto: CreateApplicationDto): Promise<Application> {
         const { eventId, motivation, experience, skills } = createApplicationDto;

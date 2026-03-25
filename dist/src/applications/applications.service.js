@@ -29,6 +29,27 @@ let ApplicationsService = class ApplicationsService {
         this.eventsRepository = eventsRepository;
         this.usersRepository = usersRepository;
     }
+    async onModuleInit() {
+        setTimeout(async () => {
+            const count = await this.applicationsRepository.count();
+            if (count === 0) {
+                const volunteer = await this.usersRepository.findOne({ where: { email: 'volunteer@example.com' } });
+                const event = await this.eventsRepository.findOne({ where: { id: 'event-1' } });
+                if (volunteer && event) {
+                    await this.applicationsRepository.save({
+                        user: volunteer,
+                        event: event,
+                        status: application_status_enum_1.ApplicationStatus.PENDING,
+                        motivation: 'I would love to help with the charity gala!',
+                        experience: 'Previous experience in event coordination.',
+                        skills: 'Communication, Teamwork',
+                        appliedDate: new Date()
+                    });
+                    console.log('[ApplicationsService] Seeded default application for volunteer@example.com to event-1');
+                }
+            }
+        }, 5000);
+    }
     async create(userId, createApplicationDto) {
         const { eventId, motivation, experience, skills } = createApplicationDto;
         const event = await this.eventsRepository.findOne({ where: { id: eventId } });

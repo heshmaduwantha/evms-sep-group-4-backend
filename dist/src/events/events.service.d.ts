@@ -1,9 +1,11 @@
+import { OnModuleInit } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { Event } from './event.entity';
 import { CreateEventDto } from './dto/create-event.dto';
-export declare class EventsService {
+export declare class EventsService implements OnModuleInit {
     private eventRepository;
     constructor(eventRepository: Repository<Event>);
+    onModuleInit(): Promise<void>;
     createEvent(createEventDto: CreateEventDto): Promise<Event>;
     findAll(): Promise<Event[]>;
     getStats(): Promise<any>;
