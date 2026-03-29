@@ -17,7 +17,6 @@ export class EventsService implements OnModuleInit {
     if (count === 0) {
       await this.eventRepository.save([
         {
-          id: 'event-1',
           title: 'Spring Charity Gala',
           description: 'Annual charity event to support local youth programs.',
           eventDate: new Date('2026-05-15'),
@@ -27,7 +26,6 @@ export class EventsService implements OnModuleInit {
           status: 'UPCOMING' as any
         },
         {
-          id: 'event-2',
           title: 'Tech Conference 2026',
           description: 'A gathering of the best minds in technology.',
           eventDate: new Date('2026-06-20'),
@@ -55,7 +53,7 @@ export class EventsService implements OnModuleInit {
   ) {
     const query = this.eventRepository.createQueryBuilder('event');
 
-    //  SEARCH
+    // 🔍 SEARCH
     if (search) {
       query.andWhere(
         '(event.title ILIKE :search OR event.description ILIKE :search)',
@@ -63,17 +61,17 @@ export class EventsService implements OnModuleInit {
       );
     }
 
-    //  STATUS
+    // 🎯 STATUS
     if (status) {
       query.andWhere('event.status = :status', { status });
     }
 
-    //  DATE
+    // 📅 DATE
     if (date) {
       query.andWhere('event.eventDate = :date', { date });
     }
 
-    //  PAGINATION
+    // 📄 PAGINATION
     query.skip((page - 1) * limit).take(limit);
 
     const [data, total] = await query.getManyAndCount();
@@ -90,7 +88,7 @@ export class EventsService implements OnModuleInit {
     };
   }
 
- 
+  // ✅ KEEP THIS (teammate code)
   async getStats(): Promise<any> {
     const events = await this.eventRepository.find();
     
