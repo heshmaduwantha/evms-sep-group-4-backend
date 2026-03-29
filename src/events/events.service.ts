@@ -55,7 +55,7 @@ export class EventsService implements OnModuleInit {
   ) {
     const query = this.eventRepository.createQueryBuilder('event');
 
-    // 🔍 SEARCH (title + description)
+    //  SEARCH
     if (search) {
       query.andWhere(
         '(event.title ILIKE :search OR event.description ILIKE :search)',
@@ -63,29 +63,34 @@ export class EventsService implements OnModuleInit {
       );
     }
 
-    // 🎯 FILTER BY STATUS
+    //  STATUS
     if (status) {
       query.andWhere('event.status = :status', { status });
     }
 
-    // 📅 FILTER BY DATE
+    //  DATE
     if (date) {
       query.andWhere('event.eventDate = :date', { date });
     }
 
-    // 📄 PAGINATION
+    //  PAGINATION
     query.skip((page - 1) * limit).take(limit);
 
     const [data, total] = await query.getManyAndCount();
 
     return {
-      data,
+      data: data.map(event => ({
+        ...event,
+        assignedVolunteers: 0,
+        pendingVolunteers: 0
+      })),
       total,
       page,
       limit,
     };
   }
 
+ 
   async getStats(): Promise<any> {
     const events = await this.eventRepository.find();
     
@@ -115,20 +120,13 @@ export class EventsService implements OnModuleInit {
     Object.assign(event, updateEventDto);
     return this.eventRepository.save(event);
   }
-  async deleteEvent(id: string): Promise<void> {
 
+  async deleteEvent(id: string): Promise<void> {
     const result = await this.eventRepository.delete(id);
 
     if (result.affected === 0) {
       throw new NotFoundException('Event not found');
     }
-
   }
-
-
-
-
-
-
 
 }
