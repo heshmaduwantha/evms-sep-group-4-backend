@@ -1,10 +1,20 @@
-import { IsString, IsNotEmpty, IsDateString, IsNumber, IsOptional, IsEnum, IsUUID } from 'class-validator';
+import {
+    IsString,
+    IsNotEmpty,
+    IsDateString,
+    IsNumber,
+    IsOptional,
+    IsEnum,
+    IsUUID,
+} from 'class-validator';
+
 import { EventStatus } from '../entities/event.entity';
 
 export class CreateEventDto {
+
     @IsString()
     @IsNotEmpty()
-    title: string;
+    title!: string;
 
     @IsString()
     @IsOptional()
@@ -12,30 +22,30 @@ export class CreateEventDto {
 
     @IsDateString()
     @IsNotEmpty()
-    date: Date;
+    date!: string;
 
     @IsString()
     @IsNotEmpty()
-    time: string;
+    time!: string;
 
     @IsString()
     @IsNotEmpty()
-    location: string;
+    location!: string;
 
     @IsNumber()
-    @IsNotEmpty()
-    volunteersNeeded: number;
+    volunteersNeeded!: number;
 
     @IsEnum(EventStatus)
     @IsOptional()
     status?: EventStatus;
 
     @IsUUID()
-    @IsNotEmpty()
-    organizerId: string;
+    @IsOptional()
+    organizerId?: string;
 }
 
 export class UpdateEventDto {
+
     @IsString()
     @IsOptional()
     title?: string;
@@ -46,7 +56,7 @@ export class UpdateEventDto {
 
     @IsDateString()
     @IsOptional()
-    date?: Date;
+    date?: string;
 
     @IsString()
     @IsOptional()

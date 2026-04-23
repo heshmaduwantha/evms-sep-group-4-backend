@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Event } from './event.entity';
-import { CreateEventDto } from './dto/create-event.dto';
+import { Event } from './entities/event.entity';
+import { CreateEventDto, UpdateEventDto } from './dto/event.dto';
+import { EventStatus } from './entities/event.entity';
+
 
 @Injectable()
 export class EventsService implements OnModuleInit {
@@ -17,26 +19,25 @@ export class EventsService implements OnModuleInit {
     if (count === 0) {
       await this.eventRepository.save([
         {
-          id: 'event-1',
           title: 'Spring Charity Gala',
-          description: 'Annual charity event to support local youth programs.',
-          eventDate: new Date('2026-05-15'),
-          eventTime: '18:00',
+          description: 'Annual charity event...',
+          date: '2026-05-15',
+          time: '18:00',
           location: 'Grand Ballroom, City Hotel',
-          volunteersRequired: 50,
-          status: 'UPCOMING' as any
+          volunteersNeeded: 50,
+          status: EventStatus.UPCOMING
         },
         {
-          id: 'event-2',
           title: 'Tech Conference 2026',
           description: 'A gathering of the best minds in technology.',
-          eventDate: new Date('2026-06-20'),
-          eventTime: '09:00',
+          date: '2026-06-10',
+          time: '09:00',
           location: 'Convention Center',
-          volunteersRequired: 30,
-          status: 'UPCOMING' as any
+          volunteersNeeded: 30,
+          status: EventStatus.UPCOMING
         }
       ]);
+
       console.log('[EventsService] Seeded default events: event-1, event-2');
     }
   }
@@ -55,7 +56,7 @@ export class EventsService implements OnModuleInit {
   ) {
     const query = this.eventRepository.createQueryBuilder('event');
 
-    // 🔍 SEARCH (title + description)
+    // SEARCH
     if (search) {
       query.andWhere(
         '(event.title ILIKE :search OR event.description ILIKE :search)',
@@ -63,23 +64,27 @@ export class EventsService implements OnModuleInit {
       );
     }
 
-    // 🎯 FILTER BY STATUS
+    // STATUS
     if (status) {
       query.andWhere('event.status = :status', { status });
     }
 
-    // 📅 FILTER BY DATE
+    // DATE
     if (date) {
       query.andWhere('event.eventDate = :date', { date });
     }
 
-    // 📄 PAGINATION
+    // PAGINATION
     query.skip((page - 1) * limit).take(limit);
 
     const [data, total] = await query.getManyAndCount();
 
     return {
-      data,
+      data: data.map(event => ({
+        ...event,
+        assignedVolunteers: 0,
+        pendingVolunteers: 0
+      })),
       total,
       page,
       limit,
@@ -88,11 +93,18 @@ export class EventsService implements OnModuleInit {
 
   async getStats(): Promise<any> {
     const events = await this.eventRepository.find();
-    
+
     const totalEvents = events.length;
-    const activeEvents = events.filter(e => e.status === 'ONGOING' || e.status === 'UPCOMING').length;
-    const completedEvents = events.filter(e => e.status === 'COMPLETED').length;
-    const totalVolunteersRequired = events.reduce((sum, e) => sum + (e.volunteersRequired || 0), 0);
+
+    const activeEvents = events.filter(
+      e => e.status === EventStatus.UPCOMING || e.status === EventStatus.ACTIVE
+    ).length;
+
+    const completedEvents = events.filter(
+      e => e.status === EventStatus.COMPLETED
+    ).length;
+
+    const totalVolunteersRequired = events.reduce((sum, e) => sum + (e.volunteersNeeded || 0), 0);
 
     return {
       totalEvents,
@@ -106,7 +118,7 @@ export class EventsService implements OnModuleInit {
     return this.eventRepository.findOneBy({ id });
   }
 
-  async updateEvent(id: string, updateEventDto: CreateEventDto): Promise<Event> {
+  async updateEvent(id: string, updateEventDto: UpdateEventDto): Promise<Event> {
     const event = await this.eventRepository.findOneBy({ id });
     if (!event) {
       throw new NotFoundException('Event not found');
@@ -115,20 +127,18 @@ export class EventsService implements OnModuleInit {
     Object.assign(event, updateEventDto);
     return this.eventRepository.save(event);
   }
-  async deleteEvent(id: string): Promise<void> {
 
+  async cancelEvent(id: string) {
+    return this.eventRepository.update(id, {
+      status: EventStatus.CANCELLED
+    });
+  }
+  async deleteEvent(id: string): Promise<void> {
     const result = await this.eventRepository.delete(id);
 
     if (result.affected === 0) {
       throw new NotFoundException('Event not found');
     }
-
   }
-
-
-
-
-
-
 
 }

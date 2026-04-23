@@ -11,35 +11,35 @@ export enum EventStatus {
 @Entity('events')
 export class Event {
     @PrimaryGeneratedColumn('uuid')
-    id: string;
+    id!: string;
 
     @Column()
-    title: string;
+    title!: string;
 
     @Column({ type: 'text', nullable: true })
-    description: string;
+    description!: string;
 
     @Column({ type: 'date' })
-    date: Date;
+    date!: Date;
 
     @Column({ type: 'varchar', length: 50 })
-    time: string;
+    time!: string;
 
     @Column()
-    location: string;
+    location!: string;
 
     @Column({ type: 'int', default: 0 })
-    volunteersNeeded: number;
+    volunteersNeeded!: number;
 
     @Column({
         type: 'enum',
         enum: EventStatus,
         default: EventStatus.UPCOMING,
     })
-    status: EventStatus;
+    status!: EventStatus;
 
     @ManyToOne(() => User, { eager: true })
-    organizer: User;
+    organizer!: User;
 
     @ManyToMany(() => User)
     @JoinTable({
@@ -47,11 +47,11 @@ export class Event {
         joinColumn: { name: 'event_id', referencedColumnName: 'id' },
         inverseJoinColumn: { name: 'user_id', referencedColumnName: 'id' }
     })
-    volunteers: User[];
+    volunteers!: User[];
 
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn()
-    updatedAt: Date;
+    updatedAt!: Date;
 }

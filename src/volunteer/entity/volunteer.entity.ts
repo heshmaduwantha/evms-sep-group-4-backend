@@ -1,45 +1,43 @@
-import { Attendance } from 'src/attendance/entities/attendance.entity';
+import { Attendance } from '../../attendance/entities/attendance.entity';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-
-
 
 @Entity()
 export class Volunteer {
 
   @PrimaryGeneratedColumn()
-id: string;
+  id!: string;
 
-@Column({ unique: true, nullable: true })
-qrCode: string;
+  @Column({ unique: true, nullable: true })
+  qrCode!: string;
 
   @Column()
-  name: string;
+  name!: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column()
-  phone: string;
+  phone!: string;
 
   @Column()
-  skills: string;
+  skills!: string;
 
   @Column()
-  availability: string;
+  availability!: string;
 
   @Column({ default: 0 })
-  activities: number;
+  activities!: number;
 
   @Column({ default: true })
-  active: boolean;
+  active!: boolean;
 
   @Column({ nullable: true })
-department: string;
+  department!: string;
 
-@Column({ default: 'VOLUNTEER' })
-  role: string;
+  @Column({ default: 'VOLUNTEER' })
+  role!: string;
 
   @OneToMany(() => Attendance, attendance => attendance.volunteer)
-  attendances: Attendance[];
+  attendances!: Attendance[];
 
 }

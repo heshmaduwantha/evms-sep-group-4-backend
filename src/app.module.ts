@@ -34,7 +34,7 @@ import { Role } from './roles/entities/role.entity';
         username: configService.get<string>('PG_DB_USER'),
         password: configService.get<string>('PG_DB_PASSWORD'),
         database: configService.get<string>('PG_DB_NAME'),
-        entities: [User, Event, Volunteer, Attendance, Application, Role],
+        entities: [User, Event, Volunteer, Attendance, Role],
         autoLoadEntities: true,
         synchronize: true, // Only for development!
       }),
@@ -46,7 +46,7 @@ import { Role } from './roles/entities/role.entity';
     AttendanceModule,
     ManualCheckinModule,
     ReportsModule,
-    ApplicationsModule,
+    //ApplicationsModule,
     RolesModule,
   ],
   controllers: [AppController],
