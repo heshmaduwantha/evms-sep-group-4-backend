@@ -18,6 +18,7 @@ import { Application } from './applications/entities/application.entity';
 // ── Roles & Assignments ──────────────────────────────────────────────
 import { RolesModule } from './roles/roles.module';
 import { Role } from './roles/entities/role.entity';
+import { VolunteerModule } from './volunteer/volunteer.module';
 
 @Module({
   imports: [
@@ -34,7 +35,7 @@ import { Role } from './roles/entities/role.entity';
         username: configService.get<string>('PG_DB_USER'),
         password: configService.get<string>('PG_DB_PASSWORD'),
         database: configService.get<string>('PG_DB_NAME'),
-        entities: [User, Event, Volunteer, Attendance, Role],
+        entities: [User, Event, Volunteer, Attendance, Role, Application],
         autoLoadEntities: true,
         synchronize: true, // Only for development!
       }),
@@ -46,7 +47,8 @@ import { Role } from './roles/entities/role.entity';
     AttendanceModule,
     ManualCheckinModule,
     ReportsModule,
-    //ApplicationsModule,
+    ApplicationsModule,
+    VolunteerModule,
     RolesModule,
   ],
   controllers: [AppController],
