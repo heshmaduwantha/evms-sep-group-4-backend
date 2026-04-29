@@ -21,7 +21,30 @@ The Event Management System (EVMS) is a comprehensive platform designed to strea
 - **Language:** TypeScript
 
 ---
-
+---
+ 
+## Authentication Flow
+ 
+```
+Client                        Backend
+  |                              |
+  |  POST /auth/login            |
+  |  { email, password }  -----> |
+  |                              |  Validate credentials
+  |                              |  Hash compare with bcrypt
+  |  <----- { access_token }     |  Sign JWT with JWT_SECRET
+  |                              |
+  |  GET /events                 |
+  |  Authorization: Bearer <JWT> |
+  |  -----------------------------> AuthGuard validates token
+  |                              |  Extract role from payload
+  |  <----- 200 OK              |  Check RBAC permission
+```
+ 
+- Passwords are hashed with **bcrypt** before storage.
+- JWTs are signed with the `JWT_SECRET` and expire after `ACCESS_TOKEN_VALIDITY_DURATION_IN_SEC` seconds.
+- The `AuthGuard` and role decorators protect each route based on the user's assigned role.
+---
 ## Project Setup Instructions
 
 ### Prerequisites
