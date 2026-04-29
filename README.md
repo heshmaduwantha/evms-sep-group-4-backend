@@ -5,8 +5,8 @@ The Event Management System (EVMS) is a comprehensive platform designed to strea
 ## Technologies Used
 
 ### Frontend
-- **Framework:** Angular 17+ (v21.2.5)
-- **UI Components:** PrimeNG (v17.18.12), PrimeFlex
+- **Framework-** Angular 17+ (v21.2.5)
+- **UI Components-** PrimeNG (v17.18.12), PrimeFlex
 - **Charting & Data Viz:** Chart.js
 - **PDF Generation:** jsPDF & jsPDF-autotable
 - **Styling:** CSS, @fontsource/inter
