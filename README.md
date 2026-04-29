@@ -1,98 +1,103 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Event Management System (EVMS)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+The Event Management System (EVMS) is a comprehensive platform designed to streamline the organization, management, and tracking of events, volunteers, attendances, and user roles. 
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Technologies Used
 
-## Description
+### Frontend
+- **Framework:** Angular 17+ (v21.2.5)
+- **UI Components:** PrimeNG (v17.18.12), PrimeFlex
+- **Charting & Data Viz:** Chart.js
+- **PDF Generation:** jsPDF & jsPDF-autotable
+- **Styling:** CSS, @fontsource/inter
+- **Language:** TypeScript
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Backend
+- **Framework:** NestJS (v11.0)
+- **Database:** PostgreSQL (pg)
+- **ORM:** TypeORM
+- **Authentication:** Passport, JWT (JSON Web Tokens)
+- **Security:** bcrypt (Password Hashing)
+- **Language:** TypeScript
 
-## Project setup
+---
 
-```bash
-$ npm install
-```
+## Project Setup Instructions
 
-## Compile and run the project
+### Prerequisites
+Before you begin, ensure you have the following installed on your machine:
+- **Node.js** (v18 or higher recommended)
+- **npm** (comes with Node.js)
+- **PostgreSQL** (running locally or via Docker)
 
-```bash
-# development
-$ npm run start
+### 1. Database Setup
+1. Create a PostgreSQL database for the application.
+2. Ensure you have a `.env` file in the `backend` directory configured with your database credentials. An example `.env` might look like:
+   ```env
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USER=your_db_username
+   DB_PASSWORD=your_db_password
+   DB_NAME=your_db_name
+   APP_PORT=3200
+   JWT_SECRET=your_jwt_secret
+   ```
 
-# watch mode
-$ npm run start:dev
+### 2. Backend Setup
+1. Navigate to the `backend` directory:
+   ```bash
+   cd backend
+   ```
+2. Install the dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the backend server in development mode:
+   ```bash
+   npm run start:dev
+   ```
+   The backend should now be running on `http://localhost:3200` (or the port specified in your `.env`).
 
-# production mode
-$ npm run start:prod
-```
+### 3. Frontend Setup
+1. Open a new terminal and navigate to the `frontend` directory:
+   ```bash
+   cd frontend
+   ```
+2. Install the dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the frontend development server:
+   ```bash
+   npm run start
+   ```
+   The frontend should now be running on `http://localhost:4200`.
 
-## Run tests
+---
 
-```bash
-# unit tests
-$ npm run test
+## User Guide
 
-# e2e tests
-$ npm run test:e2e
+### 1. Authentication & Authorization
+- **Registration & Login:** Users can register an account and securely log in.
+- **Role-Based Access Control:** The system distinguishes between different types of users (e.g., Admin, Organizer, Volunteer). Menus and features adjust automatically based on user permissions.
 
-# test coverage
-$ npm run test:cov
-```
+### 2. Event Management (Organizers & Admins)
+- **Create Events:** Add new events, defining essential details such as the event name, schedule, location, and capacity.
+- **Manage Events:** View a list of all events. Edit event details or remove events that are no longer active.
+- **Applications:** Review and approve or reject applications submitted by volunteers for specific events.
 
-## Deployment
+### 3. Volunteer Management
+- **Volunteer Dashboard:** Volunteers have access to a dedicated dashboard where they can discover upcoming events and apply to participate.
+- **My Events:** Volunteers can keep track of events they are scheduled to attend and view their past participation history.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### 4. Attendance Tracking
+- **Check-ins:** Organizers can check volunteers in upon arrival. The system includes a dedicated module for manual check-ins.
+- **Attendance Records:** Organizers and admins can view comprehensive attendance logs for any given event to monitor volunteer turnout.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 5. Reporting and Analytics
+- **Dashboard Charts:** The main dashboard offers visual insights (via Chart.js) into system metrics such as event frequency and volunteer engagement.
+- **Exporting Reports:** Users can generate detailed reports and export them as PDF files for offline review or archiving.
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### 6. User Management (Admins)
+- Admins possess the ability to view all registered users in the system.
+- Admins can modify user roles and update account statuses, ensuring proper governance over platform access.
