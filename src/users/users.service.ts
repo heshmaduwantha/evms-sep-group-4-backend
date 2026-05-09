@@ -12,32 +12,7 @@ export class UsersService implements OnModuleInit {
     ) { }
 
     async onModuleInit() {
-        const bcrypt = await import('bcrypt');
-
-        const seeds = [
-            { email: 'organizer@example.com', password: 'Password123!', role: 'organizer' as any },
-            { email: 'volunteer@example.com', password: 'Password123!', role: 'volunteer' as any },
-        ];
-
-        for (const seed of seeds) {
-            let user = await this.usersRepository.findOne({ where: { email: seed.email } });
-            if (user) {
-                // Always ensure correct role even if user already exists
-                if (user.role !== seed.role) {
-                    user.role = seed.role;
-                    await this.usersRepository.save(user);
-                    console.log(`[UsersService] Fixed role for ${seed.email} -> ${seed.role}`);
-                }
-            } else {
-                const hashedPassword = await bcrypt.hash(seed.password, 10);
-                await this.usersRepository.save({
-                    email: seed.email,
-                    password: hashedPassword,
-                    role: seed.role,
-                });
-                console.log(`[UsersService] Seeded user: ${seed.email} with role ${seed.role}`);
-            }
-        }
+        // Legacy seed removed in favor of SeedService
     }
 
     async findByEmail(email: string): Promise<User | null> {

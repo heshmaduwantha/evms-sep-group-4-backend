@@ -7,8 +7,10 @@ import { Event } from '../events/entities/event.entity';
 import { User } from '../users/entities/user.entity';
 import { Application } from '../applications/entities/application.entity';
 
+import { Volunteer } from '../users/entities/volunteer.entity';
+
 @Module({
-  imports: [TypeOrmModule.forFeature([Role, Event, User, Application])],
+  imports: [TypeOrmModule.forFeature([Role, Event, User, Application, Volunteer])],
   controllers: [RolesController],
   providers: [RolesService],
   exports: [RolesService],

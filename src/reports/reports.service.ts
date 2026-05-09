@@ -18,8 +18,12 @@ export class ReportsService {
   ) { }
 
   async getAttendanceReports(filters: any) {
-    const { eventId, date, status, department } = filters;
+    let { eventId, date, status, department } = filters;
+    // Normalize: treat empty string as null to avoid UUID cast errors
+    if (!eventId || eventId === '' || eventId === 'all') eventId = null;
+    if (!date || date === '') date = null;
     console.log(`[ReportsService] getAttendanceReports - Filters: eventId=${eventId}, date=${date}, status=${status}, department=${department}`);
+
 
     const findOptions: any = {
       relations: ['attendances'],
@@ -37,7 +41,7 @@ export class ReportsService {
       .leftJoinAndSelect('application.event', 'event')
       .where('application.status = :status', { status: ApplicationStatus.APPROVED });
 
-    if (eventId && eventId !== '') {
+    if (eventId) {
       appQuery.andWhere('application.eventId = :eventId', { eventId });
     }
 
@@ -50,7 +54,7 @@ export class ReportsService {
       let attendances = v.attendances || [];
       
       // Filter attendances for this specific event if requested
-      if (eventId && eventId !== '' && eventId !== 'all') {
+      if (eventId) {
         attendances = attendances.filter(a => a.eventId === eventId);
       }
 
@@ -71,7 +75,7 @@ export class ReportsService {
       } else {
         attendances.forEach(a => {
           // If a specific date is requested, filter here
-          if (date && date !== '') {
+          if (date) {
             const checkInDate = a.checkInTime ? new Date(a.checkInTime).toISOString().split('T')[0] : null;
             if (checkInDate !== date) return;
           }
@@ -92,7 +96,7 @@ export class ReportsService {
 
     // Process portal applications
     approvedApps.forEach(app => {
-      if (date && date !== '') {
+      if (date) {
         const appDate = new Date(app.updatedAt).toISOString().split('T')[0];
         if (appDate !== date) return;
       }
@@ -116,7 +120,7 @@ export class ReportsService {
     });
 
     // 3. Consolidate duplicates if "All Events" is selected
-    if (!eventId || eventId === '' || eventId === 'all') {
+    if (!eventId) {
       const consolidated: any[] = [];
       const seenNames = new Set<string>();
 

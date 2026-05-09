@@ -4,8 +4,10 @@ import { User } from '../../users/entities/user.entity';
 export enum EventStatus {
     UPCOMING = 'upcoming',
     ACTIVE = 'active',
+    ONGOING = 'ongoing',
     COMPLETED = 'completed',
     CANCELLED = 'cancelled',
+    ON_HOLD = 'on hold',
 }
 
 @Entity('events')

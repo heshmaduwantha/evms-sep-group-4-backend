@@ -51,8 +51,8 @@ export class ApplicationsController {
 
     @Patch(':id')
     @Roles(UserRole.VOLUNTEER)
-    update(@Param('id') id: string, @Body() updateApplicationDto: UpdateApplicationDto, @GetUser('id') userId: string) {
-        return this.applicationsService.update(id, updateApplicationDto, userId);
+    update(@Param('id') id: string, @Body() updateApplicationDto: UpdateApplicationDto, @GetUser() user: User) {
+        return this.applicationsService.update(id, updateApplicationDto, user.id);
     }
 
     @Delete(':id')

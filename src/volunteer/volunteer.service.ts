@@ -1,15 +1,48 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { Volunteer } from './entity/volunteer.entity';
+import { Volunteer } from '../users/entities/volunteer.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Application } from '../applications/entities/application.entity';
+import { User } from '../users/entities/user.entity';
+import { ApplicationStatus } from '../applications/enums/application-status.enum';
 
 @Injectable()
 export class VolunteerService {
 
   constructor(
     @InjectRepository(Volunteer)
-    private repo: Repository<Volunteer>
+    private repo: Repository<Volunteer>,
+    @InjectRepository(Application)
+    private appRepo: Repository<Application>,
+    @InjectRepository(User)
+    private userRepo: Repository<User>
   ) {}
+
+  async getApprovedApplicants() {
+    const approvedApps = await this.appRepo.find({
+      where: { status: ApplicationStatus.APPROVED },
+      relations: ['user']
+    });
+
+    // Map unique users to volunteer format
+    const users = new Map<string, any>();
+    approvedApps.forEach(app => {
+      if (app.user && !users.has(app.user.id)) {
+        users.set(app.user.id, {
+          id: app.user.id,
+          name: app.user.name,
+          email: app.user.email,
+          skills: app.skills || '',
+          role: 'Portal Volunteer',
+          department: 'Application Desk',
+          active: true,
+          isPortalUser: true
+        });
+      }
+    });
+
+    return Array.from(users.values());
+  }
 
   // CREATE
   async create(data: any) {

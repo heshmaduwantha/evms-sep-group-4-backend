@@ -14,8 +14,23 @@ export class VolunteerController {
 
   // GET ALL + FILTER
   @Get()
-  findAll(@Query() query: any) {
-    return this.service.findAll(query);
+  async findAll(@Query() query: any) {
+    try {
+      const manualVolunteers = await this.service.findAll(query);
+      
+      // Fetch approved applicants from applications
+      let approvedApplicants: any[] = [];
+      try {
+        approvedApplicants = await this.service.getApprovedApplicants();
+      } catch (appErr) {
+        console.error('[VolunteerController] Failed to fetch approved applicants:', appErr.message);
+      }
+      
+      return [...manualVolunteers, ...approvedApplicants];
+    } catch (err) {
+      console.error('[VolunteerController] Critical error in findAll:', err.message);
+      throw err;
+    }
   }
 
   // GET ONE

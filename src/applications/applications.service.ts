@@ -19,27 +19,28 @@ export class ApplicationsService implements OnModuleInit {
     ) {}
 
     async onModuleInit() {
-        // Wait a bit for other services to seed
-        setTimeout(async () => {
-            const count = await this.applicationsRepository.count();
-            if (count === 0) {
-                const volunteer = await this.usersRepository.findOne({ where: { email: 'volunteer@example.com' } });
-                const event = await this.eventsRepository.findOne({ where: { id: 'event-1' } });
+        const count = await this.applicationsRepository.count();
+        if (count === 0) {
+            const volunteers = await this.usersRepository.find({ where: { role: 'volunteer' as any } });
+            const events = await this.eventsRepository.find();
 
-                if (volunteer && event) {
+            if (volunteers.length > 0 && events.length > 0) {
+                const statusCycle = [ApplicationStatus.PENDING, ApplicationStatus.APPROVED, ApplicationStatus.PENDING];
+                
+                for (let i = 0; i < Math.min(volunteers.length, 5); i++) {
                     await this.applicationsRepository.save({
-                        user: volunteer,
-                        event: event,
-                        status: ApplicationStatus.PENDING,
-                        motivation: 'I would love to help with the charity gala!',
-                        experience: 'Previous experience in event coordination.',
-                        skills: 'Communication, Teamwork',
-                        appliedDate: new Date()
+                        user: volunteers[i],
+                        event: events[i % events.length],
+                        status: statusCycle[i % statusCycle.length],
+                        motivation: 'I am very interested in this event and want to contribute.',
+                        experience: i % 2 === 0 ? 'Expert' : 'Intermediate',
+                        skills: 'Coordination, Support',
+                        appliedDate: new Date(Date.now() - i * 3600000)
                     });
-                    console.log('[ApplicationsService] Seeded default application for volunteer@example.com to event-1');
                 }
+                console.log(`[ApplicationsService] Seeded ${Math.min(volunteers.length, 5)} applications.`);
             }
-        }, 5000);
+        }
     }
     async create(userId: string, createApplicationDto: CreateApplicationDto): Promise<Application> {
         const { eventId, motivation, experience, skills, location, gender, experienceDetails } = createApplicationDto;

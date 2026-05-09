@@ -6,6 +6,8 @@ import { Volunteer } from '../users/entities/volunteer.entity';
 import { CreateCheckInDto } from './dto/create-check-in.dto';
 import { Application } from '../applications/entities/application.entity';
 import { ApplicationStatus } from '../applications/enums/application-status.enum';
+import { Event } from '../events/entities/event.entity';
+import { Role } from '../roles/entities/role.entity';
 
 @Injectable()
 export class AttendanceService {
@@ -16,42 +18,54 @@ export class AttendanceService {
     private volunteerRepository: Repository<Volunteer>,
     @InjectRepository(Application)
     private applicationRepository: Repository<Application>,
+    @InjectRepository(Event)
+    private eventRepository: Repository<Event>,
+    @InjectRepository(Role)
+    private roleRepository: Repository<Role>,
   ) { }
 
   async onModuleInit() {
-    const vCount = await this.volunteerRepository.count();
+    const vSeeds = [
+      { name: 'Sarah Wilson', role: 'Team Lead', department: 'Operations', email: 'sarah.w@example.com' },
+      { name: 'John Doe', role: 'Volunteer', department: 'Front Desk', email: 'john.d@example.com' },
+      { name: 'Alex Johnson', role: 'Volunteer', department: 'Logistics', email: 'alex.j@example.com' },
+      { name: 'Mike Ross', role: 'Volunteer', department: 'Marketing', email: 'mike.r@example.com' },
+      { name: 'Emma Stone', role: 'Volunteer', department: 'Hospitality', email: 'emma.s@example.com' },
+    ];
+
+    for (const seed of vSeeds) {
+      const existing = await this.volunteerRepository.findOne({ where: { email: seed.email } });
+      if (!existing) {
+        await this.volunteerRepository.save(this.volunteerRepository.create(seed));
+        console.log(`[AttendanceService] Seeded volunteer: ${seed.email}`);
+      }
+    }
+
     const aCount = await this.attendanceRepository.count();
-
-    if (vCount === 0) {
-      console.log('Seeding initial volunteer and attendance data...');
-      const v1 = await this.volunteerRepository.save(this.volunteerRepository.create({
-        name: 'Sarah Wilson',
-        role: 'Team Lead',
-        department: 'Operations'
-      }));
-
-      const v2 = await this.volunteerRepository.save(this.volunteerRepository.create({
-        name: 'John Doe',
-        role: 'Volunteer',
-        department: 'Front Desk'
-      }));
-
-      await this.attendanceRepository.save([
-        this.attendanceRepository.create({
-          volunteer: v1,
-          eventId: 'event-1',
-          status: 'present',
-          checkInTime: new Date(),
-          checkInMethod: 'manual'
-        }),
-        this.attendanceRepository.create({
-          volunteer: v2,
-          eventId: 'event-1',
-          status: 'late',
-          checkInTime: new Date(),
-          checkInMethod: 'manual'
-        })
-      ]);
+    if (aCount === 0) {
+      console.log('Seeding initial attendance data...');
+      const firstEvent = await this.eventRepository.findOne({ where: {}, order: { createdAt: 'ASC' } });
+      const volunteers = await this.volunteerRepository.find();
+      
+      if (firstEvent && volunteers.length >= 2) {
+        await this.attendanceRepository.save([
+          this.attendanceRepository.create({
+            volunteer: volunteers[0],
+            eventId: firstEvent.id,
+            status: 'present',
+            checkInTime: new Date(),
+            checkInMethod: 'manual'
+          }),
+          this.attendanceRepository.create({
+            volunteer: volunteers[1],
+            eventId: firstEvent.id,
+            status: 'late',
+            checkInTime: new Date(),
+            checkInMethod: 'manual'
+          })
+        ]);
+        console.log('[AttendanceService] Seeded initial attendances for event: ' + firstEvent.title);
+      }
     }
   }
 
@@ -90,12 +104,25 @@ export class AttendanceService {
     const absent = totalVolunteers - (checkedIn + lateArrivals);
     const attendanceRate = totalVolunteers > 0 ? Math.round(((checkedIn + lateArrivals) / totalVolunteers) * 100) : 0;
 
+    // Per-event stats for chips
+    const allEvents = await this.eventRepository.find();
+    const eventStats = await Promise.all(allEvents.map(async (e) => {
+      const manualCount = await this.attendanceRepository.count({ where: { eventId: e.id, status: 'present' } });
+      const portalCount = await this.applicationRepository.count({ where: { event: { id: e.id }, status: ApplicationStatus.APPROVED } });
+      return {
+        id: e.id,
+        title: e.title,
+        count: manualCount + portalCount
+      };
+    }));
+
     return {
       totalVolunteers,
       checkedIn,
       lateArrivals,
       absent,
-      attendanceRate
+      attendanceRate,
+      eventStats
     };
   }
 
@@ -123,6 +150,22 @@ export class AttendanceService {
         eventId: attendance?.eventId || (isAll ? undefined : eventId),
         method: 'manual'
       };
+    });
+
+    // Get all roles for this event to resolve volunteer roles
+    const roles = await this.roleRepository.find({
+      where: isAll ? {} : { event: { id: eventId } },
+      relations: ['assignedVolunteers', 'event']
+    });
+
+    const userRoleMap = new Map<string, string>();
+    roles.forEach(role => {
+      role.assignedVolunteers.forEach(v => {
+        // If "all" events, we might have multiple roles for same user in different events.
+        // For simplicity, we take the last one or prefix with event title.
+        const key = isAll ? `${v.id}-${role.event.id}` : v.id;
+        userRoleMap.set(key, role.name);
+      });
     });
 
     // Consolidation by name for manual roster if 'all'
@@ -159,10 +202,11 @@ export class AttendanceService {
         
         // Also avoid duplicating manual entries
         if (!isAll || !manualRoster.some(m => m.name.toLowerCase() === lowerName)) {
+          const roleKey = isAll ? `${app.user.id}-${app.event.id}` : app.user.id;
           portalRoster.push({
             id: app.id,
             name: name,
-            role: 'Volunteer',
+            role: userRoleMap.get(roleKey) || 'Volunteer',
             status: 'present',
             checkedInTime: new Date(app.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
             eventId: app.event.id,

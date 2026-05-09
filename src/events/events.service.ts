@@ -16,16 +16,16 @@ export class EventsService implements OnModuleInit {
 
   async onModuleInit() {
     const count = await this.eventRepository.count();
-    if (count === 0) {
-      await this.eventRepository.save([
+    const organizer = await this.eventRepository.manager.getRepository('User').findOne({ where: { role: 'organizer' } });
+    const eventSeeds = [
         {
           title: 'Spring Charity Gala',
-          description: 'Annual charity event...',
+          description: 'Annual charity event to support local youth programs.',
           date: '2026-05-15',
           time: '18:00',
           location: 'Grand Ballroom, City Hotel',
           volunteersNeeded: 50,
-          status: EventStatus.UPCOMING
+          status: EventStatus.UPCOMING,
         },
         {
           title: 'Tech Conference 2026',
@@ -34,12 +34,38 @@ export class EventsService implements OnModuleInit {
           time: '09:00',
           location: 'Convention Center',
           volunteersNeeded: 30,
-          status: EventStatus.UPCOMING
+          status: EventStatus.UPCOMING,
+        },
+        {
+          title: 'Community Clean-up',
+          description: 'Local park cleaning and restoration.',
+          date: '2026-05-20',
+          time: '08:00',
+          location: 'Central Park',
+          volunteersNeeded: 100,
+          status: EventStatus.UPCOMING,
+        },
+        {
+          title: 'Food Bank Distribution',
+          description: 'Weekly food distribution for families in need.',
+          date: '2026-05-12',
+          time: '10:00',
+          location: 'Westside Community Center',
+          volunteersNeeded: 15,
+          status: EventStatus.ACTIVE,
         }
-      ]);
+      ];
 
-      console.log('[EventsService] Seeded default events: event-1, event-2');
-    }
+      for (const seed of eventSeeds) {
+        const existing = await this.eventRepository.findOne({ where: { title: seed.title } });
+        if (!existing) {
+          await this.eventRepository.save({
+            ...seed,
+            organizer: organizer || undefined
+          });
+          console.log(`[EventsService] Seeded event: ${seed.title}`);
+        }
+      }
   }
 
   async createEvent(createEventDto: CreateEventDto): Promise<Event> {
